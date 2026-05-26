@@ -30,6 +30,60 @@ The protocol has three load-bearing elements:
 
 Everything else in the protocol exists to make these three work.
 
+## Install as a skill
+
+This repository is an Agent Skill. The skill folder is the repo root: it contains `SKILL.md`, plus supporting `references/`, `assets/`, and `scripts/`.
+
+Package it first:
+
+```bash
+git clone https://github.com/yashraj59/autoresearch-bio.git
+cd autoresearch-bio
+git archive --format=zip --prefix=autoresearch-bio/ HEAD -o ../autoresearch-bio-skill.zip
+```
+
+The ZIP should contain a top-level `autoresearch-bio/` folder, with `autoresearch-bio/SKILL.md` inside it. Do not zip the files directly at the archive root.
+
+### ChatGPT
+
+ChatGPT Skills are available on supported workspace plans. In ChatGPT:
+
+1. Select your profile icon.
+2. Open **Skills**.
+3. Select **New skill**.
+4. Select **Upload from your computer**.
+5. Upload `autoresearch-bio-skill.zip`.
+6. Install or enable the skill.
+
+Then ask for it naturally:
+
+```text
+Use autoresearch-bio to draft an autoresearch.md for a bounded ML experiment.
+```
+
+Workspace admins may need to enable skill creation, installation, or publishing before members can install and share skills. See OpenAI's Skills documentation for current plan and admin details: https://help.openai.com/en/articles/20001066-skills-in-chatgpt
+
+### Claude
+
+Claude Skills require code execution and file creation to be enabled. In Claude:
+
+1. Enable code execution and file creation in **Settings > Capabilities**, or ask an organization owner to enable it in **Organization settings > Skills**.
+2. Open **Customize > Skills**.
+3. Click the **+** button, then select **Create skill**.
+4. Select **Upload a skill**.
+5. Upload `autoresearch-bio-skill.zip`.
+6. Toggle the skill on.
+
+Then ask for it naturally:
+
+```text
+Use autoresearch-bio to audit this autonomous experiment plan.
+```
+
+Claude can also use skills shared or provisioned by a Team or Enterprise organization. See Anthropic's Skills documentation for current plan, sharing, and upload details: https://support.claude.com/en/articles/12512180-use-skills-in-claude
+
+For coding agents that do not support skill upload yet, clone this repo and point the agent at `SKILL.md` directly.
+
 ## What this is not
 
 This is not a general brainstorming template. It is not random exploration. It is not "let the agent figure it out." It is a discipline system for letting an agent run experiments without silently drifting away from the scientific question.

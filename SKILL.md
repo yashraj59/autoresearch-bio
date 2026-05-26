@@ -1,6 +1,6 @@
 ---
 name: autoresearch-bio
-description: Use when creating, revising, auditing, or launching bio-first but domain-general autonomous ML or software research loops. Strongest for biological ML systems such as single-cell, multi-omics, perturbation prediction, drug response, protein function, variant effect, and cell-state modeling, but also usable for language, vision, retrieval, ranking, forecasting, robotics, agent, benchmark, performance, and developer-tooling loops. Covers autoresearch.md prompts, protected model/system baselines, Step 0 baseline registries, tiered evaluation gates, biological or domain no-regression metrics, lineage tracking via lightweight DAG, metric investigations, stop/amend/close decisions, optional Debate Council mode, and amendment review checklist. Do not use for wet-lab protocols, clinical advice, ordinary one-off code review, generic brainstorming, paper summaries, production deployment, or hyperparameter tuning unless tied to a bounded autonomous experiment loop.
+description: Create, revise, audit, or launch bounded autonomous ML/software research loops with protected baselines, tiered evals, lineage, metric investigations, and biology no-regression checks.
 ---
 
 # Autoresearch-Bio Skill
