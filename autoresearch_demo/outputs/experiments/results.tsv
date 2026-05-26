@@ -1,0 +1,7 @@
+commit	experiment_num	parent_experiment_ids	branch_type	subtree_status	family	tier_reached	status	primary_metric	secondary_metric	protected_metric_summary	architectural_change	description	seed_list	ig_top_k_overlap_vs_baseline
+v1.1.0	0		root	expanded	baseline	0	BASELINE_COMPLETE	0.8936588103254771	0.8125327394075063	ece=0.1243, prec@spec90=1.000	step0_baseline	Published MoFNet v1.1.0 baseline, 3 seeds, synthetic ROS/MAP	66,1,7	1.0
+v1.1.0+calib	1	0	linear	pruned	calibration	1	TIER1_DISCARD_NO_SIGNAL	0.9003928170594838	0.84375	ece=0.1449, prec@spec90=1.000	temperature_scaling_head_after_linear4	Add learnable temperature parameter (Family 1 smallest mechanism)	66	1.0
+v1.1.0+l1_2e-2	2	0	fork	pruned	sparsity	1	TIER1_DISCARD_NO_SIGNAL	0.8849607182940517	0.8372093023255814	ece=0.1283, prec@spec90=1.000	l1_reg=2e-2_on_mofnet1	Higher L1 sparsity (Family 2, fork from baseline)	66	1.0
+v1.1.0+l1_5e-2	3	0	fork	pruned	sparsity	1	TIER1_DISCARD_METRIC_REGRESSION	0.8843995510662177	0.8372093023255814	ece=0.1341, prec@spec90=1.000	l1_reg=5e-2_on_mofnet1	Even higher L1 (Family 2 second fork)	66	1.0
+v1.1.0+gating	4	0	linear	expanded	gating	1	TIER1_KEEP_CONTROLLED_SIGNAL	0.8964646464646465	0.8372093023255814	ece=0.1096, prec@spec90=1.000	per_feature_gate_on_modality_a_and_t1	Cross-omic gating before concat (Family 3)	66	1.0
+v1.1.0+exp4	5	4	replay	pruned	gating	2	TIER2_FAIL_HIGH_VARIANCE	0.8936588103254771	0.00241367151151591	3 seeds, mean ece=0.1168	replay_of_exp_4	Tier 2 multi-seed replay of Tier 1 keep from exp 4	1,7,17	

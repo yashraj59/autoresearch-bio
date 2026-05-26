@@ -1,0 +1,48 @@
+{
+  "model": "MoFNet v1.1.0",
+  "metric_directions": {
+    "test_auc": "higher",
+    "test_f1": "higher",
+    "test_acc": "higher",
+    "test_ece": "lower",
+    "test_prec_at_spec90": "higher",
+    "ig_top_k_overlap_vs_baseline": "higher"
+  },
+  "baseline_mean": {
+    "val_auc": 0.8551307847082494,
+    "val_f1": 0.7516217358546043,
+    "test_auc": 0.8936588103254771,
+    "test_f1": 0.8125327394075063,
+    "test_acc": 0.7999999999999999,
+    "test_ece": 0.12430544354849389,
+    "test_prec_at_spec90": 1.0
+  },
+  "baseline_std": {
+    "val_auc": 0.007087569994790482,
+    "val_f1": 0.01723336131143541,
+    "test_auc": 0.003099147311219768,
+    "test_f1": 0.02583562963161815,
+    "test_acc": 0.020412414523193124,
+    "test_ece": 0.007131839306359494,
+    "test_prec_at_spec90": 0.0
+  },
+  "baseline_ig_top_10": [
+    0,
+    3,
+    4,
+    5,
+    19,
+    22,
+    11,
+    8,
+    6,
+    15
+  ],
+  "seeds": [
+    66,
+    1,
+    7
+  ],
+  "data_provenance": "Synthetic ROS/MAP-shaped multi-omic, deterministic seed=42",
+  "source": "demonstration only, not real ROS/MAP"
+}
