@@ -217,6 +217,7 @@ RESUMABILITY_INSIGHT_BRIEFS_MISSING
 HANDOFF_DOCUMENT_OVERSIZED
 REPRODUCTION_PROVENANCE_MISSING
 EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED
+EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED
 REFERENCE_NUMBER_HARDCODED_IN_REPORT
 SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR
 ```
@@ -237,4 +238,5 @@ Semantics, briefly:
 - `REFERENCE_NUMBER_HARDCODED_IN_REPORT` — a plot/PDF/blog generator embeds a numeric comparator as a module constant instead of reading from `BASELINE_REGISTRY.md` or `external_public_baselines.tsv`. Caught by code review rather than the validator (see `artifact_retention.md`).
 - `REPRODUCTION_PROVENANCE_MISSING` — a row in `external_public_baselines.tsv` lacks `reproduction_mode`, `claim_strength`, `upstream_commit_or_release`, or `metric_selection_policy` (see `biology_addendum.md` / `domain_adaptation.md`).
 - `EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED` — a `full_reimplementation` row claims `upstream_unchanged` semantics, or a plot/PDF/blog renders the row without the required reimplementation label.
+- `EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED` — a row in `external_public_baselines.tsv` is missing `eval_split`, `split_parity`, or `split_manifest_sha256`, or `split_parity` has an invalid value. The comparison cannot be cited until parity is declared. `different_train_different_eval` is allowed but flags the row as ballpark-only and forbids its use as evidence in "the model beats X" claims (see `biology_addendum.md "External Baseline Split Parity"`).
 - `SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR` — experiment cap reached with no candidate clearing the family-wise multiple-comparison floor (see `statistical_promotion.md`).

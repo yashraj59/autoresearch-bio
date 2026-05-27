@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased — External baseline split parity
+
+### Added
+
+- **`references/biology_addendum.md "External Baseline Split Parity"`.** A separate subsection under External Baseline Reproduction Provenance. Every row of `external_public_baselines.tsv` must declare `eval_split` (which `split_manifest.json` role the score was computed on), `split_parity` (`same_train_same_eval` / `same_train_different_eval` / `different_train_different_eval`), and `split_manifest_sha256`. A `different_train_different_eval` row is documented as ballpark reference only and may not be cited as evidence in "the model beats X" claims. The recommended workflow: write a script that loads `split_manifest.json`, trains each external on the project's `train` indices using the external's documented default hyperparameters, evaluates separately on each held-out role, and writes one row per `(external, eval_split)` pair with `split_parity = same_train_same_eval`. The worked example lives at [`mofnet_poc/scripts/run_externals_same_mlomics_split.py`](https://github.com/yashraj59/mofnet_poc/blob/main/scripts/run_externals_same_mlomics_split.py).
+- **`references/domain_adaptation.md`** mirrors the same rule for non-bio projects.
+- **`references/decision_labels.md`** new label `EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED`.
+- **`scripts/validate_autoresearch_artifacts.py`** now checks `eval_split` and `split_parity` columns in `external_public_baselines.tsv`, enforces the enum on `split_parity`, and surfaces the new label when columns are missing.
+
+### Motivating evidence
+
+The MoFNet POC originally ran MOGONET and moBRCA-net on the MOGONET BRCA preprocessed split (875 samples, 1000 features per omic) while MoFNet ran on MLOmics GS-BRCA Top (671 samples, 5000/5000/366 features). The comparison was reported as a head-to-head when in fact the externals were on a different dataset slice with different feature selection and a different train/test partition. The autoresearch-bio external-baseline rule in PR #2 caught reproduction-mode lies and metric-selection-policy lies but did not catch the split-parity lie. This patch closes that gap.
+
 ## Unreleased — Literature search hardening, resumability, and provenance discipline
 
 ### Added
