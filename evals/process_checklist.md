@@ -120,6 +120,35 @@ Files on disk but absent from `external_resources.md` are flagged `RESOURCE_PROV
 
 ### Literature Discipline
 
-The starter file `papers_consulted_starter.md` lives in `assets/`. The agent copies it to the run's `papers_consulted.md` at launch. After the first 10 experiments, `diff papers_consulted.md assets/papers_consulted_starter.md` must produce non-empty output. Before any architectural family produces its first Tier 1 keep, the file must contain at least one entry tagged to that family.
+The starter file `papers_consulted_starter.md` lives in `assets/`. The agent copies it to the run's `papers_consulted.md` at launch. Three independent checks apply:
 
-Eval failure label: `LITERATURE_DISCIPLINE_VIOLATION`.
+1. **Untouched-starter check.** After the first 10 experiments, `diff papers_consulted.md assets/papers_consulted_starter.md` must produce non-empty output. Failure label: `LITERATURE_DISCIPLINE_VIOLATION`.
+2. **Stall-triggered pass check.** When `LITERATURE_PASS_REQUIRED_BY_STALL` fires for a family (three consecutive Tier 1 discards, a Tier 2 failure with protected-metric regression, or +20 experiments without clearing the multiple-comparison floor — see `references/core_protocol.md §13`), the next mechanism for that family may not launch until `papers_consulted.md` gains at least one new entry tagged to the stalled family.
+3. **Starter cross-check before first Tier 1 keep.** Before any pre-specified family records its first Tier 1 keep, every paper in `papers_consulted.md` (and `assets/papers_consulted_starter.md`) tagged to that family's mechanism class must have populated `Experiment where it was tried` and `Outcome` fields against at least one experiment in the family. If a tagged paper has empty fields, the keep is blocked and the row is flagged `LITERATURE_GROUNDING_MISSING`. This is the rule that would have caught the MoFNet POC's reinvention of cross-omic attention while three referenced papers describing it sat in the starter with empty outcome fields for 123 experiments.
+
+### Resumability And Cognitive Checkpoint
+
+- **`STATE_OF_PLAY.md` present and recent.** The file must exist, be ≤2 KB, and have an mtime no older than the most recent `results.tsv` row. Missing or stale → `RESUMABILITY_STATE_OF_PLAY_STALE`.
+- **`insights/INSIGHT_BRIEF_NNN.md` cadence.** A loop with `N` experiments must have at least `floor(N / 10) - 1` briefs in `insights/`. A loop with ≥100 experiments and zero briefs fails → `RESUMABILITY_INSIGHT_BRIEFS_MISSING`.
+- **Handoff document size.** Any `*HANDOFF*.md` file in the run directory exceeds 8 KB → `HANDOFF_DOCUMENT_OVERSIZED`. The closure step must trim or split.
+
+### Metric Identity At Phase Boundaries
+
+When the journal records a phase boundary (amendment, leakage correction, evaluator refactor, dataset change), a `METRIC_IDENTITY_DIFF.md` file must exist with an mtime later than the boundary's journal entry. Missing → `METRIC_IDENTITY_DIFF_REQUIRED`.
+
+### Append-Only Log Hygiene
+
+Scan the Markdown logs `architectural_changes_log.md`, `family_allocation.md`, `papers_consulted.md`, `research_journal.md` for orphan markers:
+
+- entry titles `TMP`, `TODO`, `<...>`, `<TBD>`, `XXX`, `FIXME`, or any all-uppercase placeholder;
+- two consecutive entries whose bodies are byte-identical despite different titles or differing hyperparameters in `results.tsv`.
+
+Orphan rows that survive closure → `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED`. The matching check on `results.tsv` (empty `description` / `architectural_change` cells, repeated `architectural_change` text across rows with differing hyperparameters) is reviewed at closure rather than by the validator, because TSV rows have structured fields rather than free-text placeholder titles.
+
+### External Baseline Reproduction Provenance
+
+Every row of `external_public_baselines.tsv` (or any equivalent comparator TSV) must declare `reproduction_mode`, `claim_strength`, `upstream_commit_or_release`, and `metric_selection_policy`. Missing fields → `REPRODUCTION_PROVENANCE_MISSING`. A `full_reimplementation` row claiming `upstream_unchanged` semantics (in its `claim_strength` text or in a downstream plot/PDF/blog) → `EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED`.
+
+### Reference-Number Single Source Of Truth
+
+Every plot/PDF/blog generator script in the run directory or sibling project must read literature comparator numbers from `external_public_baselines.tsv` (or the explicitly registered source) rather than from a module-level constant. Hardcoded numeric constants in report code that match a TSV row value → `REFERENCE_NUMBER_HARDCODED_IN_REPORT`.

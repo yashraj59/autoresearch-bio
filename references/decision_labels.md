@@ -198,3 +198,43 @@ AMENDMENT_REVIEW_FAIL_AUTO_OVERRIDE
 ```
 
 Applied to any amendment block authored by the same autonomous process that hit the stop condition it purports to override (see `core_protocol.md §14`). The amendment is non-actionable; the loop must wait for a supervised human turn or a Debate Council convocation in a different agent process.
+
+## Literature, Metric Identity, Resumability, And Reproduction-Provenance Labels
+
+```text
+LITERATURE_PASS_REQUIRED_BY_STALL
+LITERATURE_GROUNDING_MISSING
+LITERATURE_DISCIPLINE_VIOLATION
+METRIC_IDENTITY_DIFF_REQUIRED
+APPEND_ONLY_LOG_ORPHAN_UNRESOLVED
+IDENTITY_BLOCK_INCOMPLETE
+ARCHITECTURAL_LOG_TEMPLATE_ONLY
+IDENTITY_VIOLATIONS_LOG_SKELETON
+RESOURCE_PROVENANCE_VIOLATION
+RESUMABILITY_STATE_OF_PLAY_STALE
+RESUMABILITY_STATE_OF_PLAY_OVERSIZED
+RESUMABILITY_INSIGHT_BRIEFS_MISSING
+HANDOFF_DOCUMENT_OVERSIZED
+REPRODUCTION_PROVENANCE_MISSING
+EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED
+REFERENCE_NUMBER_HARDCODED_IN_REPORT
+SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR
+```
+
+Semantics, briefly:
+
+- `LITERATURE_PASS_REQUIRED_BY_STALL` — three consecutive Tier 1 discards in a family, a Tier 2 failure with protected-metric regression, a metric investigation that rules out a mechanism class, or +20 experiments since the last pass without clearing the MCC floor. Blocks the next mechanism for the family until a literature pass completes (see `core_protocol.md §13`).
+- `LITERATURE_GROUNDING_MISSING` — a family produced a Tier 1 keep while papers tagged to its mechanism class sit in `papers_consulted.md` with empty `Experiment where tried / Outcome` fields. Blocks Tier 2 promotion until the entries are filled.
+- `LITERATURE_DISCIPLINE_VIOLATION` — `papers_consulted.md` is byte-identical to `assets/papers_consulted_starter.md` after the first 10 experiments (see `evals/process_checklist.md`).
+- `METRIC_IDENTITY_DIFF_REQUIRED` — a phase boundary touched a gate-bearing column without an accompanying `METRIC_IDENTITY_DIFF.md` (see `core_protocol.md §7`).
+- `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED` — orphan rows (TMP / TODO / template-only) survive closure. Blocks Tier 3 promotion for any candidate whose lineage passes through the affected log section.
+- `IDENTITY_BLOCK_INCOMPLETE` — a per-experiment `summary.json` lacks the required identity block (see `artifact_retention.md`). The row is excluded from promotion evidence.
+- `ARCHITECTURAL_LOG_TEMPLATE_ONLY`, `IDENTITY_VIOLATIONS_LOG_SKELETON`, `RESOURCE_PROVENANCE_VIOLATION` — stub-compliance failures detected by the validation script (see `evals/process_checklist.md`).
+- `RESUMABILITY_STATE_OF_PLAY_STALE` — `STATE_OF_PLAY.md` is missing or older than the most recent `results.tsv` row.
+- `RESUMABILITY_STATE_OF_PLAY_OVERSIZED` — `STATE_OF_PLAY.md` exceeds the ~2 KB cap (it is state, not history).
+- `RESUMABILITY_INSIGHT_BRIEFS_MISSING` — ≥100 experiments with an empty `insights/` directory (see `artifact_retention.md`).
+- `HANDOFF_DOCUMENT_OVERSIZED` — `CODEX_HANDOFF.md` or equivalent exceeds the ~8 KB state cap. Blocks closure until trimmed.
+- `REFERENCE_NUMBER_HARDCODED_IN_REPORT` — a plot/PDF/blog generator embeds a numeric comparator as a module constant instead of reading from `BASELINE_REGISTRY.md` or `external_public_baselines.tsv`. Caught by code review rather than the validator (see `artifact_retention.md`).
+- `REPRODUCTION_PROVENANCE_MISSING` — a row in `external_public_baselines.tsv` lacks `reproduction_mode`, `claim_strength`, `upstream_commit_or_release`, or `metric_selection_policy` (see `biology_addendum.md` / `domain_adaptation.md`).
+- `EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED` — a `full_reimplementation` row claims `upstream_unchanged` semantics, or a plot/PDF/blog renders the row without the required reimplementation label.
+- `SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR` — experiment cap reached with no candidate clearing the family-wise multiple-comparison floor (see `statistical_promotion.md`).

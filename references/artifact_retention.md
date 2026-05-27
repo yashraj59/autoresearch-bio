@@ -13,12 +13,16 @@ Initialize and maintain these files in the autoresearch directory:
 | `results.tsv` | One structured row per experiment, with lineage columns. |
 | `research_journal.md` | Narrative log: hypothesis, implementation, result, decision, learning, lineage note. |
 | `architectural_changes_log.md` | Code-level architecture record: modules changed, init, params, cost, expected vs observed effect. |
-| `family_allocation.md` | Experiments used per family, Tier 1 keeps, Tier 2 passes, Tier 3 wins, status, and pruned subtree records. |
+| `family_allocation.md` | Experiments used per family, Tier 1 keeps, Tier 2 passes, Tier 3 wins, status, sweep axes, and pruned subtree records. |
 | `BASELINE_REGISTRY.md` | Source of truth for baseline metrics and provenance. |
 | `papers_consulted.md` | Literature search record: citation, technique extracted, mapping to experiment, outcome. |
 | `external_resources.md` | Downloaded datasets/resources, URLs, versions, license/provenance. |
 | `identity_violations_considered.md` | Ideas considered but rejected or deferred because they violate identity/scope. |
 | `insights/INSIGHT_BRIEF_NNN.md` | Every 10 experiments or major pivot: synthesis and next decisions. |
+| `STATE_OF_PLAY.md` | Next-action-only state snapshot regenerated after every experiment. Replaces, never appends to, the previous snapshot. |
+| `leakage_preflight.md` | Launch-precondition audit (see `core_protocol.md §3.5`). |
+| `split_manifest.json` | Four-role split declaration (see `core_protocol.md §3.5`). |
+| `METRIC_IDENTITY_DIFF.md` | Required at every phase boundary (amendment, leakage correction, prompt rewrite, evaluator refactor) per `core_protocol.md §7`. |
 | `final_report.md` | Closure report when stop condition fires. |
 
 ---
@@ -105,6 +109,69 @@ Every per-experiment `summary.json` (or equivalent run-record file under `output
 ```
 
 The closure check in `final_report.md` must list any experiment whose `summary.json` lacks a complete `identity` block. Such experiments are tagged `IDENTITY_BLOCK_INCOMPLETE` and excluded from promotion evidence.
+
+---
+
+## Resumability Discipline
+
+A new agent session reading the run state must be able to act in under 5 minutes of reading. Agents naturally convert handoff documents into append-only chat logs; the skill counters that with three caps:
+
+1. **Handoff documents (`CODEX_HANDOFF.md`, `HANDOFF.md`, or equivalent) are state, not history.** Hard cap ~8 KB. Replace stale sections, do not append. Per-experiment chronology lives in `research_journal.md`; cite the latest journal anchor.
+2. **`STATE_OF_PLAY.md` is mandatory.** A next-action-only file (≤2 KB) regenerated after every experiment. Required contents: current model of record, last completed experiment ID and outcome, next single proposed action, blockers, open `LITERATURE_PASS_REQUIRED_BY_STALL` flags.
+3. **`insights/INSIGHT_BRIEF_NNN.md` every 10 experiments.** ≤1 KB each. A loop with ≥100 experiments and an empty `insights/` directory fails the resumability check and must pause until at least the most recent two briefs are written.
+
+"Files To Read First" lists in any handoff document must contain at most five entries, with `STATE_OF_PLAY.md` as the fifth.
+
+---
+
+## `insights/INSIGHT_BRIEF_NNN.md` Schema
+
+Each brief is the cognitive checkpoint that prevents an autoresearch loop from drifting into directionless mechanism-tinkering. Required contents (≤1 KB total):
+
+- **Experiment-num range:** the inclusive span this brief covers (e.g. `EXP030`–`EXP039`).
+- **Active family-allocation snapshot:** one-line per family with `Tier 1 keeps / Tier 2 passes / status`.
+- **What we learned since the prior brief:** one paragraph. New mechanisms that worked, new failure modes observed, new metric understanding.
+- **What mechanism class we are not pursuing further:** one paragraph. Families retired, ideas escalated to `identity_violations_considered.md`, dead-end mechanisms.
+- **Next 5 planned experiment IDs with rationale:** one line each. If the rationale references a paper, link to the entry in `papers_consulted.md`.
+
+Closure (`final_report.md`) must list every missing INSIGHT_BRIEF gap (e.g. "EXP030–EXP049 had no brief written"). Loops that close with brief gaps cannot promote a Tier 3 winner without an amendment explaining the cognitive-checkpoint lapse.
+
+---
+
+## Append-Only Log Hygiene
+
+Append-only logs (`results.tsv`, `architectural_changes_log.md`, `family_allocation.md`, `papers_consulted.md`, `research_journal.md`) accumulate orphan entries when partial runs abort or templates get pasted but never filled. The skill forbids the following patterns:
+
+- entry titles `TMP`, `TODO`, `<...>`, `XXX`, `FIXME`, or any all-uppercase placeholder;
+- a heading line followed by a body section that contains only the template placeholder text (e.g. `Change: <one-line hyperparameter string>`);
+- two consecutive entries whose only difference is the title (identical body prose despite different hyperparameters in `results.tsv`).
+
+The closure step in `final_report.md` must enumerate every orphan row found and either:
+
+- **backfill** with real data (preferred) — the orphan becomes a real entry; or
+- **delete** with a one-line reason recorded in the journal entry that ran at the time.
+
+Orphan rows that survive closure trigger label `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED` and prevent Tier 3 promotion of any candidate whose lineage passes through the affected log section.
+
+---
+
+## Single Source Of Truth For Reference Numbers
+
+Any plot, PDF, blog post, or report generator that compares the model of record or a candidate against an internal baseline or external literature number must load the comparator from a canonical artifact and cite the row, not from a hardcoded module-level constant.
+
+Sources of truth:
+
+- internal baselines → `BASELINE_REGISTRY.md`;
+- external literature comparators → `external_public_baselines.tsv` (or the equivalent project-level TSV referenced from the registry);
+- promotion thresholds → the protected-metric block of the active `autoresearch.md` prompt or its amendment.
+
+Anti-patterns flagged in code review:
+
+- `PUBLIC_REFERENCE = 0.901` as a module constant in a plot/PDF/blog generator;
+- a hardcoded absolute filesystem path to a specific run's plot directory;
+- inline numeric thresholds in matplotlib annotations that don't trace back to a CSV/MD cell.
+
+Recommended fingerprint: every report generator includes a `# source: <file>#<row-or-cell>` comment next to every numeric comparator it renders.
 
 ---
 

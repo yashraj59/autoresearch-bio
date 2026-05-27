@@ -45,7 +45,7 @@ REQUIRED_RESULTS_COLUMNS = [
     "leakage_guard",
 ]
 
-VALID_BRANCH_TYPES = {"root", "linear", "fork", "combine", "replay"}
+VALID_BRANCH_TYPES = {"root", "linear", "fork", "grid_sweep", "combine", "replay"}
 VALID_SUBTREE_STATUS = {
     "active_leaf",
     "expanded",
@@ -137,7 +137,7 @@ def validate_results_rows(
                 f"results.tsv row {i} (exp {exp_num}): root branch_type must have empty parent_experiment_ids"
             )
 
-        if branch_type in {"linear", "fork", "replay"} and parent_ids:
+        if branch_type in {"linear", "fork", "grid_sweep", "replay"} and parent_ids:
             parts = [p.strip() for p in parent_ids.split(",") if p.strip()]
             if len(parts) != 1:
                 errors.append(
@@ -243,6 +243,151 @@ def validate_identity_violations(path: Path, experiment_count: int) -> list[str]
     return []
 
 
+# Soft caps from references/artifact_retention.md "Resumability Discipline".
+STATE_OF_PLAY_MAX_BYTES = 2 * 1024
+HANDOFF_MAX_BYTES = 8 * 1024
+INSIGHT_BRIEF_CADENCE = 10
+INSIGHT_BRIEF_RAMP = 1  # require ceil(N/10) - INSIGHT_BRIEF_RAMP briefs
+
+
+def validate_resumability(run_dir: Path, experiment_count: int) -> list[str]:
+    """STATE_OF_PLAY.md presence, INSIGHT_BRIEF cadence, handoff size caps."""
+    errors: list[str] = []
+    state_of_play = run_dir / "STATE_OF_PLAY.md"
+    if experiment_count >= 1 and not state_of_play.exists():
+        errors.append(
+            "STATE_OF_PLAY.md is missing. Required after any experiment runs. "
+            "Label: RESUMABILITY_STATE_OF_PLAY_STALE."
+        )
+    elif state_of_play.exists() and state_of_play.stat().st_size > STATE_OF_PLAY_MAX_BYTES:
+        errors.append(
+            f"STATE_OF_PLAY.md exceeds {STATE_OF_PLAY_MAX_BYTES} bytes "
+            f"({state_of_play.stat().st_size} bytes). It is state, not history. "
+            f"Label: RESUMABILITY_STATE_OF_PLAY_OVERSIZED."
+        )
+
+    insights = run_dir / "insights"
+    if experiment_count >= 100:
+        brief_count = (
+            len(list(insights.glob("INSIGHT_BRIEF_*.md"))) if insights.exists() else 0
+        )
+        expected = max(0, (experiment_count // INSIGHT_BRIEF_CADENCE) - INSIGHT_BRIEF_RAMP)
+        if brief_count < expected:
+            errors.append(
+                f"insights/ has {brief_count} INSIGHT_BRIEF_*.md files; "
+                f"expected >= {expected} after {experiment_count} experiments. "
+                f"Label: RESUMABILITY_INSIGHT_BRIEFS_MISSING."
+            )
+
+    for handoff in run_dir.glob("*HANDOFF*.md"):
+        if handoff.stat().st_size > HANDOFF_MAX_BYTES:
+            errors.append(
+                f"{handoff.name} is {handoff.stat().st_size} bytes "
+                f"(cap {HANDOFF_MAX_BYTES}). Handoff is state, not history. "
+                f"Label: HANDOFF_DOCUMENT_OVERSIZED."
+            )
+
+    return errors
+
+
+# Append-only log orphan markers (see references/artifact_retention.md).
+ORPHAN_TITLE_PATTERN = re.compile(
+    r"^#+\s*(TMP|TODO|XXX|FIXME|<\.\.\.>|<TBD>)\s*$",
+    re.MULTILINE,
+)
+
+
+def validate_append_only_logs(run_dir: Path) -> list[str]:
+    errors: list[str] = []
+    targets = [
+        "architectural_changes_log.md",
+        "family_allocation.md",
+        "papers_consulted.md",
+        "research_journal.md",
+    ]
+    for name in targets:
+        path = run_dir / name
+        if not path.exists():
+            continue
+        body = path.read_text(encoding="utf-8", errors="replace")
+        matches = ORPHAN_TITLE_PATTERN.findall(body)
+        if matches:
+            errors.append(
+                f"{name} contains orphan markers ({len(matches)}): "
+                f"{', '.join(sorted(set(matches)))}. "
+                f"Label: APPEND_ONLY_LOG_ORPHAN_UNRESOLVED."
+            )
+    return errors
+
+
+# External baseline reproduction-provenance columns.
+EXTERNAL_BASELINE_REQUIRED_COLUMNS = (
+    "reproduction_mode",
+    "claim_strength",
+    "upstream_commit_or_release",
+    "metric_selection_policy",
+)
+VALID_REPRODUCTION_MODES = {
+    "upstream_unchanged",
+    "upstream_patched",
+    "full_reimplementation",
+}
+
+
+def validate_external_baselines_tsv(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    errors: list[str] = []
+    with path.open("r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        header = reader.fieldnames or []
+        missing = [c for c in EXTERNAL_BASELINE_REQUIRED_COLUMNS if c not in header]
+        if missing:
+            errors.append(
+                f"{path.name} missing reproduction-provenance columns: {', '.join(missing)}. "
+                f"Label: REPRODUCTION_PROVENANCE_MISSING."
+            )
+            return errors
+        for i, row in enumerate(reader, start=2):
+            mode = row.get("reproduction_mode", "").strip()
+            claim = row.get("claim_strength", "").strip().lower()
+            if mode and mode not in VALID_REPRODUCTION_MODES:
+                errors.append(
+                    f"{path.name} row {i}: invalid reproduction_mode '{mode}'. "
+                    f"Must be one of {sorted(VALID_REPRODUCTION_MODES)}."
+                )
+            if mode == "full_reimplementation":
+                # Affirmative reproduction claim: "reproduced upstream X" or
+                # "reproduction of upstream X". The canonical correct wording is
+                # "compat-equivalent reimplementation, not a reproduction of the
+                # published numbers" — that contains "reproduction" only inside the
+                # negation phrase "not a reproduction", which is the correct form.
+                has_affirmative_claim = (
+                    "reproduced" in claim
+                    or re.search(r"\breproduction\s+of\b", claim) is not None
+                )
+                has_negation = (
+                    "not a reproduction" in claim
+                    or "not reproduced" in claim
+                    or "not a reproduc" in claim  # tolerate truncations
+                )
+                if has_affirmative_claim and not has_negation:
+                    errors.append(
+                        f"{path.name} row {i}: reproduction_mode='full_reimplementation' but "
+                        f"claim_strength reads as 'reproduced …'. A reimplementation is not a "
+                        f"reproduction of the published numbers. "
+                        f"Label: EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED."
+                    )
+            for col in EXTERNAL_BASELINE_REQUIRED_COLUMNS:
+                if not row.get(col, "").strip():
+                    errors.append(
+                        f"{path.name} row {i}: empty {col}. "
+                        f"Label: REPRODUCTION_PROVENANCE_MISSING."
+                    )
+                    break
+    return errors
+
+
 def main(argv: list[str]) -> int:
     if len(argv) != 2:
         print(
@@ -304,6 +449,12 @@ def main(argv: list[str]) -> int:
         validate_identity_violations(
             run_dir / "identity_violations_considered.md", experiment_count
         )
+    )
+
+    errors.extend(validate_resumability(run_dir, experiment_count))
+    errors.extend(validate_append_only_logs(run_dir))
+    errors.extend(
+        validate_external_baselines_tsv(run_dir / "external_public_baselines.tsv")
     )
 
     if errors:

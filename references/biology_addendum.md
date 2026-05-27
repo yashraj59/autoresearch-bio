@@ -96,6 +96,27 @@ interpretation downgrade if coverage is low
 
 ---
 
+## External Baseline Reproduction Provenance
+
+Comparing your model against an external baseline imports the external's hygiene into your project. The MoFNet POC reimplemented moBRCA-net from scratch (237 lines of from-scratch TF1-style code with "Compatibility fixes: Python3 range/division and corrected miRNA slicing" in the file) and logged the canonical upstream GitHub URL as `source_repo`. A reader skimming `external_public_baselines.tsv` would assume upstream code was run unchanged. That is a claim-integrity failure independent of any leakage.
+
+Every row of `external_public_baselines.tsv` (or the equivalent comparator TSV) must declare:
+
+- **`reproduction_mode`** — one of:
+  - `upstream_unchanged` — cloned the published repo at a recorded commit, ran the published entrypoint with the published config, no edits to model code or data preprocessing;
+  - `upstream_patched` — ran the published repo with a documented patch (Python 3 compat, dependency pin, dtype fix, etc.). The patch diff must be saved at `external_baselines/<name>/upstream.patch` and referenced from the TSV row;
+  - `full_reimplementation` — the model code in this repo is the agent's or author's own implementation, not upstream code. The file path of the reimplementation must be cited.
+- **`claim_strength`** — the wording that may appear in `final_report.md` / blog posts / plots:
+  - `upstream_unchanged` → "reproduced upstream `<commit>`";
+  - `upstream_patched` → "reproduced upstream `<commit>` with documented patch";
+  - `full_reimplementation` → **"compat-equivalent reimplementation, not a reproduction of the published numbers"**. The published number must still be cited separately, with the gap (if any) reported openly.
+- **`upstream_commit_or_release`** — the exact commit hash, tag, or release the comparison is against. If `full_reimplementation`, this is still required and refers to the version the reimplementation was modeled on.
+- **`metric_selection_policy`** — as recorded under `core_protocol.md §3.5 "External Baseline Metric-Selection Policy"`.
+
+A `full_reimplementation` row may not be claimed as a benchmark-reproduction win. Any plot, PDF, or blog generator that displays an `external_public_baselines.tsv` comparator must read these columns and label `full_reimplementation` rows visibly as such (legend, footnote, or table column).
+
+---
+
 ## External Biological Resources
 
 Track all external resources in `external_resources.md` with URLs, versions, organism IDs, confidence thresholds, and license notes.
