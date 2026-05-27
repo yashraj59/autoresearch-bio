@@ -61,6 +61,8 @@ Step 0 deliverables:
 outputs/<run>/step0_baselines/<dataset>_baseline.md
 outputs/<run>/step0_baselines/SUMMARY.md
 outputs/<run>/BASELINE_REGISTRY.md
+outputs/<run>/split_manifest.json
+outputs/<run>/leakage_preflight.md
 ```
 
 `BASELINE_REGISTRY.md` must record:
@@ -75,6 +77,87 @@ outputs/<run>/BASELINE_REGISTRY.md
 - known ambiguity or provenance caveats.
 
 If two artifacts disagree about a baseline, resolve by reading raw per-seed metric files, not summary Markdown. If ambiguity remains, state it explicitly and do not silently pick the more convenient number.
+
+`split_manifest.json` must declare four split roles (see §3.5) with disjoint sample IDs. `leakage_preflight.md` is the required pre-launch audit (see §3.5) and must be regenerated whenever data flow in the search code changes.
+
+---
+
+## 3.5 Leakage Pre-Flight Check (Step 0 Companion)
+
+This section exists because a prior real-world run of this protocol (the MoFNet POC, 2026-05) leaked the locked test split through model selection across 123 trials despite all other invariants being honored. Prose-level "do not leak the test set" was not enough. This section makes the rule a structural pre-launch contract.
+
+### Mandatory Four-Role Split
+
+Every search loop must declare a `split_manifest.json` with the following roles. Pairwise sample-ID intersections must be empty.
+
+- **`train`** — fits model parameters, fits preprocessing (imputers / scalers / normalizers), selects features and interaction pairs, builds masks, computes anchors and attributions used in subsequent training.
+- **`validation`** — chooses architectures, hyperparameters, warm starts, pruning decisions, keep/fail status, candidate ranking. The search loop is permitted to read this split repeatedly.
+- **`locked_test`** — one-time final confirmation after candidate freeze. The search loop must NEVER read this split during exploration. After it is read once for confirmation, it is considered spent and a new locked split is required for any further claims.
+- **`legacy_test`** — historical reference splits from earlier exploratory work. Cited only for context; never used for current selection, status, or claims.
+
+A schema is provided at `assets/split_manifest.schema.json`.
+
+### Mandatory Pre-Flight Audit
+
+Before any Step 0 result is accepted into the baseline registry, the agent must produce `leakage_preflight.md` answering each question below with a code-path citation (file and line range). The answer "I did not check" is not acceptable.
+
+For each protected split (typically `locked_test` and any held-out cohort), enumerate:
+
+1. **Reads.** Every code path that loads the split's features or labels.
+2. **Uses.** For each read, classify the use as one of:
+   - `final_evaluation_only` — read once after candidate freeze, never fed back into the search loop.
+   - `diagnostics_only` — logged for human inspection but never read by selection / promotion / anchor / warm-start logic. Must include the agent's explicit statement of why this is structurally enforced.
+   - `selection_signal` — DISQUALIFYING. Used by status assignment, Tier gate, family allocation, anchor selection, warm-start, attribution that feeds later training, hyperparameter ranking, or any other code path whose output influences which experiments run next.
+3. **Indirect feedback.** Identify any artifact computed from the protected split (attributions, calibration curves, error analyses, saliency maps) that is later read during training, anchoring, or hyperparameter selection. Treat all such paths as `selection_signal`.
+4. **Split disjointness.** Confirm pairwise empty intersection of sample IDs across all split roles, with a short code snippet showing the check.
+5. **Benchmark-curation provenance.** If the benchmark's "Top-K" / feature-selected variant was constructed using full-dataset supervised feature selection, flag this as benchmark-level leakage and downgrade any external claim to "exploratory on curated benchmark" until a non-curated variant is also run.
+
+If any path is classified `selection_signal`, the loop must not launch. Fix the path first.
+
+### Test-Derived Signals Are Not Training Inputs
+
+Attributions, saliency maps, calibration curves, error analyses, and any other quantity computed on a `locked_test` or held-out split are not eligible inputs to subsequent training, anchoring, warm-starting, or hyperparameter selection. Such quantities may appear in audits and final reports only.
+
+When the search needs an anchor (e.g., integrated-gradients top-K features used as a regularization target), the anchor must be derived from `train` data only. If validation-derived anchors are used, they must be re-derived per validation fold to avoid implicit selection on the same fold used for candidate ranking.
+
+### Frozen On-Disk Test-Derived Artifacts
+
+Test-derived signals survive on disk across protocol amendments. The ban above applies to artifacts as much as to live computations.
+
+If files such as `ig_top20.txt`, `baseline_attributions.npy`, `anchors.json`, `*_saliency.pt`, or any analogous attribution/explanation artifact were ever produced from a protected split in any prior run, they are themselves test-derived signals. They may not be read by any subsequent experiment's selection, status, gate, warm-start, or attribution code path — even after a leakage-corrected amendment that fixed the live driver.
+
+The `leakage_preflight.md` audit must:
+
+- enumerate by filename every on-disk artifact derived from a protected split in any prior phase of the project;
+- search the current search code for any read of those filenames;
+- certify (with code-path citation) that no later experiment reads them, or invalidate the artifacts before launch by either moving them out of the working tree or recomputing them from `train` data.
+
+If such artifacts exist and are not enumerated, the loop must not launch.
+
+### Post-Spent-Locked-Split Discipline
+
+Once a `locked_test` split has been read for confirmation, the search loop must do exactly one of the following:
+
+1. **Close.** Invoke §14 and write `final_report.md`. The locked-split read is the final evaluation; selection ends.
+2. **Re-charter.** Pre-register a new holdout in `split_manifest.json` before any further candidate selection. The new role's `sample_ids`, `permitted_uses`, and "single-read-only" commitment must be recorded with a creation commit hash. The previous locked split is renamed to `legacy_test` and is cited for context only.
+
+"Validation-only continuation" is not a stable state. The validation split is, by construction, a selection oracle for the loop; accumulating "above public reference on validation" rows after the locked split is spent re-runs the multiple-comparison failure the locked split was meant to control. The stop trigger `locked_split_spent_without_new_holdout_registered` (see §14) fires automatically in this state.
+
+### External Baseline Metric-Selection Policy
+
+Many upstream baseline scripts emit per-epoch test metrics by default and return the max-over-epoch value, which is itself a test-set selection. Running such a script unmodified imports that leakage into your project.
+
+Before running any upstream baseline, the agent must:
+
+1. inspect the upstream's metric loop and identify whether the reported number is `final_epoch`, `last_validation_epoch`, `best_observed_test`, `best_observed_validation`, or `single_evaluation`;
+2. commit in writing, in `BASELINE_REGISTRY.md` or an explicit pre-run note, to which of those values will be used as the comparator for your loop;
+3. if the chosen value differs from the upstream paper's reported number by more than the minimum meaningful improvement, report both numbers and label the difference openly.
+
+The discipline must precede the run. Selecting the metric after seeing the per-epoch curve is itself test-set selection.
+
+### Promotion Disqualification Rule
+
+A row in `results.tsv` with `leakage_guard = FAIL_TEST_IN_SELECTION` (see `lineage.md`) cannot satisfy Tier 3 even if all metric gates pass. The amendment protocol (§12) must be invoked to refactor the search loop before further runs proceed.
 
 ---
 
@@ -425,7 +508,9 @@ Typical stop conditions:
 - compute budget exhausted;
 - user-directed closure;
 - required artifact/provenance ambiguity cannot be resolved;
-- metric investigation shows old metrics are invalid and architecture search must pause.
+- metric investigation shows old metrics are invalid and architecture search must pause;
+- `locked_split_spent_without_new_holdout_registered` (see §3.5): a locked split was read for confirmation and no replacement holdout has been pre-registered, so the loop has no permissible final-evaluation surface and must close;
+- no candidate clears the family-wise multiple-comparison floor at the experiment cap (see `statistical_promotion.md`).
 
 When a stop trigger fires:
 
@@ -438,6 +523,17 @@ When a stop trigger fires:
 7. in autonomous Debate Council mode, convene the council, which either writes an amendment and resumes, iterates the debate, or escalates to the user.
 
 “Stop” means stop. Do not launch the next experiment and do not ask a question while continuing autonomously. In autonomous mode, the council is the only mechanism for transitioning across a stop trigger.
+
+### Stop-Trigger Amendments Must Originate Outside The Loop
+
+A stop condition that has fired may not be overridden by an amendment authored in the same autonomous process that hit it. That is structurally indistinguishable from a `while not target_beaten: keep_searching` rewrite, and it re-introduces the multiple-comparison failure the stop condition exists to prevent.
+
+Stop-trigger amendments require **one** of:
+
+1. a supervised human turn that emits the new prompt block as chat text, applied by a separate agent invocation;
+2. a Debate Council convocation (`references/debate_council.md`) in a different agent process that produces a documented quorum decision and identifies the new evidence justifying the override.
+
+Auto-generated `## User Amendment:` blocks pasted into `research_journal.md` by the same process that hit the stop are disqualifying. Mark them `AMENDMENT_REVIEW_FAIL_AUTO_OVERRIDE` (see `decision_labels.md`) and refuse to launch Tier 1 runs under their direction. The recorded user instruction that motivated the override remains in `CONVERSATION_AND_INSTRUCTIONS_LOG.md` for traceability, but the amendment text itself must be authored outside the autonomous process.
 
 ---
 

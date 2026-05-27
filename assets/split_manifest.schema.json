@@ -1,0 +1,107 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/yashraj59/autoresearch-bio/assets/split_manifest.schema.json",
+  "title": "Autoresearch-Bio Split Manifest",
+  "description": "Declares the four mandatory split roles for an autoresearch loop, per core_protocol.md §3.5. Pairwise sample-ID intersections between roles must be empty. Validated as part of the leakage pre-flight check before the loop launches.",
+  "type": "object",
+  "required": ["dataset", "splits", "creation_commit", "creation_seed", "disjointness_check"],
+  "properties": {
+    "dataset": {
+      "type": "string",
+      "description": "Human-readable dataset identifier, e.g. 'MLOmics GS-BRCA Top 3-omic'."
+    },
+    "dataset_commit_or_version": {
+      "type": "string",
+      "description": "Upstream dataset commit hash, release tag, or version string."
+    },
+    "creation_commit": {
+      "type": "string",
+      "description": "Repo commit at which this manifest was generated."
+    },
+    "creation_seed": {
+      "type": "integer",
+      "description": "Random seed used to construct the splits, when applicable. Use -1 if splits are deterministic from upstream."
+    },
+    "splits": {
+      "type": "object",
+      "required": ["train", "validation", "locked_test"],
+      "properties": {
+        "train": { "$ref": "#/definitions/split_role" },
+        "validation": { "$ref": "#/definitions/split_role" },
+        "locked_test": { "$ref": "#/definitions/split_role" },
+        "legacy_test": {
+          "anyOf": [
+            { "$ref": "#/definitions/split_role" },
+            { "type": "null" }
+          ],
+          "description": "Optional. Historical reference split from earlier exploratory work. Cited for context only; never used for current selection, status, or claims."
+        }
+      },
+      "additionalProperties": false
+    },
+    "disjointness_check": {
+      "type": "object",
+      "required": ["passed", "checked_pairs", "code_citation"],
+      "properties": {
+        "passed": { "type": "boolean", "description": "Must be true for the manifest to be valid." },
+        "checked_pairs": {
+          "type": "array",
+          "items": { "type": "array", "items": { "type": "string" }, "minItems": 2, "maxItems": 2 },
+          "description": "List of role-name pairs whose sample-ID intersections were verified empty."
+        },
+        "code_citation": {
+          "type": "string",
+          "description": "File path and line range of the code that performs the disjointness check."
+        }
+      }
+    }
+  },
+  "definitions": {
+    "split_role": {
+      "type": "object",
+      "required": ["role", "sample_count", "sample_ids", "permitted_uses"],
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": ["train", "validation", "locked_test", "legacy_test"]
+        },
+        "sample_count": { "type": "integer", "minimum": 0 },
+        "sample_ids": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Canonical sample identifiers in this role. Must be unique within the role."
+        },
+        "label_distribution": {
+          "type": "object",
+          "description": "Optional. Map from class label to count, when labels exist.",
+          "additionalProperties": { "type": "integer", "minimum": 0 }
+        },
+        "permitted_uses": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "fit_parameters",
+              "fit_preprocessing",
+              "select_features",
+              "build_masks",
+              "compute_anchors",
+              "select_architectures",
+              "select_hyperparameters",
+              "rank_candidates",
+              "tier_gate_decision",
+              "final_evaluation_only",
+              "diagnostics_only",
+              "historical_reference_only"
+            ]
+          },
+          "description": "Allowed use sites for this split role. The leakage pre-flight audit cross-checks the codebase against this list."
+        },
+        "source_file": {
+          "type": "string",
+          "description": "Optional. Path to the upstream file or fold-definition artifact that produced this split."
+        }
+      }
+    }
+  }
+}

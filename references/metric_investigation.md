@@ -12,7 +12,14 @@ Open a focused metric investigation when any of these hold:
 - different summaries disagree about the baseline;
 - literature warns that common metrics reward mode collapse;
 - null baselines are missing or suspiciously strong;
-- technical duplicate or empirical ceiling is unknown.
+- technical duplicate or empirical ceiling is unknown;
+- the `leakage_preflight.md` audit reveals a `selection_signal` path that was previously unaccounted for, or a `WARN_TEST_READ_FOR_DIAGNOSTICS_ONLY` classification needs re-examination.
+
+### Test-Derived Signals Are Not Training Inputs
+
+Attributions, saliency maps, calibration curves, error analyses, and any other quantity computed on a `locked_test` or held-out split are not eligible inputs to subsequent training, anchoring, warm-starting, or hyperparameter selection. Such quantities may appear in audits and final reports only.
+
+When the search needs an anchor (for example, integrated-gradients top-K features used as a regularization target during training), the anchor must be derived from `train` data only. If validation-derived anchors are used, they must be re-derived per validation fold to avoid implicit selection on the same fold used for candidate ranking. The full rule and its rationale live in `core_protocol.md §3.5`; this file restates it because metric investigations are the most common place where the rule gets quietly violated.
 
 ---
 

@@ -160,3 +160,41 @@ ARTIFACT_DELETE_TIER1_DISCARD_CHECKPOINT
 ARTIFACT_DELETE_TIER2_FAILURE_CHECKPOINT
 ARTIFACT_RETAIN_METRICS_AND_LOGS
 ```
+
+## Reserved Strings In Automated Status Labels
+
+Status values emitted by code (any field in `results.tsv`, `summary.json`, or other run-time artifacts whose value comes from a `status = ...` assignment or enum) must not contain comparator-relative tokens. Status is an outcome, never a relative claim.
+
+The following substrings are reserved and must not appear in any auto-emitted status label:
+
+```text
+# Claim-strength tokens (smuggle in a benchmark assertion)
+BEAT          SOTA            WINS
+OUTPERFORMS   SURPASSES       STATE_OF_THE_ART
+BENCHMARK_WIN
+
+# Comparator-relative tokens (encode a comparison to a reference number)
+ABOVE_REFERENCE     BELOW_REFERENCE     EQUAL_REFERENCE
+MATCHES_REFERENCE   WITHIN_X_OF         EXCEEDS_REFERENCE
+MISSES_REFERENCE
+```
+
+Acceptable alternatives for "the candidate's metric is above a documented reference threshold":
+
+```text
+TIER1_KEEP_VALIDATION_ABOVE_REF       # outcome of the gate, not a claim
+TIER2_MULTI_SEED_VALIDATION_ABOVE_REF
+POSTLOCK_VALIDATION_KEEP              # plain outcome
+```
+
+Relative comparisons to literature, internal references, or prior model-of-record numbers live in the `protected_metric_summary` JSON column of `results.tsv` and in `final_report.md` prose, never in the status column.
+
+The leakage pre-flight audit (`core_protocol.md §3.5`) must grep the codebase and run-summary artifacts for the reserved substrings and refuse to launch if any are found.
+
+## Amendment Review Auto-Override Label
+
+```text
+AMENDMENT_REVIEW_FAIL_AUTO_OVERRIDE
+```
+
+Applied to any amendment block authored by the same autonomous process that hit the stop condition it purports to override (see `core_protocol.md §14`). The amendment is non-actionable; the loop must wait for a supervised human turn or a Debate Council convocation in a different agent process.

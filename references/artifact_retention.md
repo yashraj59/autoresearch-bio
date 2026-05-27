@@ -79,6 +79,35 @@ The lineage columns (`parent_experiment_ids`, `branch_type`, `subtree_status`) a
 
 ---
 
+## Per-Experiment `summary.json` Reproducibility Identity Block
+
+Every per-experiment `summary.json` (or equivalent run-record file under `outputs/<experiment_id>/`) must contain a top-level `identity` object with the following fields. Without this block, the file is not valid Tier evidence and cannot support a Tier 2 or Tier 3 promotion claim.
+
+```json
+{
+  "identity": {
+    "code_commit": "<git sha of the search driver and model code at run time>",
+    "data_checksum": "<sha256 of the resolved dataset or the upstream commit/version>",
+    "split_manifest_sha256": "<sha256 of split_manifest.json used by this run>",
+    "driver_script_path": "<repo-relative path to the script that produced this row>",
+    "python_version": "<e.g. 3.11.4>",
+    "framework_versions": {"<name>": "<version>"},
+    "random_seeds": [66, 1, 7, 17, 23],
+    "split_construction_seed": 42,
+    "created_utc": "<ISO 8601 UTC timestamp>",
+    "parent_experiment_ids": ["<EXPNNN>"],
+    "branch_type": "<root|linear|fork|combine|replay>",
+    "leakage_guard": "<PASS_NO_TEST_SELECTION | WARN_TEST_READ_FOR_DIAGNOSTICS_ONLY | FAIL_TEST_IN_SELECTION>"
+  },
+  "config": { /* hyperparameters and run flags as before */ },
+  "metrics": { /* per-seed and aggregated metrics */ }
+}
+```
+
+The closure check in `final_report.md` must list any experiment whose `summary.json` lacks a complete `identity` block. Such experiments are tagged `IDENTITY_BLOCK_INCOMPLETE` and excluded from promotion evidence.
+
+---
+
 ## Artifact And Checkpoint Retention
 
 Delete large checkpoints for:

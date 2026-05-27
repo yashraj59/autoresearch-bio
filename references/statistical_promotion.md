@@ -67,6 +67,29 @@ For long loops, require at least one of:
 
 Do not rationalize a candidate after the fact by choosing only the metric where it happened to look good.
 
+### Family-Wise Multiple-Comparison Floor
+
+For a search with `N` total Tier 1 single-seed candidates evaluated against the same primary metric, no candidate may be:
+
+- named "current best";
+- promoted to Tier 2;
+- cited as evidence in `final_report.md`;
+- featured in any plot, PDF, or blog generator's "winner" position;
+
+unless its signed beneficial z-score against the Step 0 baseline (see "Signed Beneficial Score" below) exceeds the family-wise floor
+
+```text
+z_floor(N) = 2 + sqrt(log(N) / 2)     # informal Bonferroni-style floor
+```
+
+Reference values: N=10 → 1.07 over the +1σ rule of thumb → z_floor ≈ 3.07; N=100 → z_floor ≈ 3.52; N=500 → z_floor ≈ 3.91. Use the `baseline_std` from `BASELINE_REGISTRY.md` to compute z. If the project prefers a formal Bonferroni at α=0.05 (`z_floor = Φ⁻¹(1 − α/N)`), it may substitute and must record the choice in the `autoresearch.md` prompt.
+
+Log `N` (cumulative Tier 1 candidate count) and `z_floor(N)` in `results.tsv` every 10 experiments. Surface both in `family_allocation.md` at every Stage transition.
+
+If the experiment cap is reached with no candidate clearing the floor, close the loop with status `SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR` (see `core_protocol.md §14`) and report the strongest sub-floor candidate honestly as "exploratory; below multiple-comparison floor for N=…".
+
+The floor is per primary metric. If the search optimizes against several metrics, apply the floor independently per metric and require the candidate to clear at least one.
+
 ---
 
 ## Signed Beneficial Score
