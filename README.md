@@ -1,10 +1,16 @@
 # autoresearch-bio
 
-A discipline protocol for running autonomous ML research with coding agents, with extra rules for biology and single-cell modeling.
+A discipline protocol for running autonomous ML research with coding agents — **any coding agent**. The skill's output is a paste-ready Markdown prompt that drives Claude Code, ChatGPT (Codex / GPT agent harnesses), Cursor, Aider, custom SDK loops, or you-yourself-at-a-keyboard. There are no vendor-specific tool calls in the prompts it produces; portability is by design.
+
+It is **bio-first** (with extra rules for biology and single-cell modeling) but **domain-general** — the same control system applies to non-bio ML, software engineering, agent benchmarking, and infrastructure experiments.
 
 This came from running 80+ autonomous experiments on a bio-specific ML model where I learned the hard way that AI coding agents need strict research discipline. Without it, the agents drift toward mechanisms that improve broad metrics while breaking protected behavior, saturating contribution caps, collapsing diversity, or overfitting to one dataset.
 
 This repo is the protocol I use to make autoresearch less random, less reward-hacking, and more useful as actual science.
+
+## Case studies
+
+- **[MoFNet POC](https://github.com/yashraj59/MoFNet)** — applied to a multi-omic BRCA-subtype model. The first run produced a candidate that scored +0.024 accuracy over baseline; a post-hoc audit found the loop had used the locked test split as a selection oracle across 123 trials. The audit, the leakage-corrected re-run, and the resulting patch to this skill (the `§3.5` pre-flight check and the `leakage_guard` column) are documented in the MoFNet repo and in this changelog.
 
 ## What is in this repo
 

@@ -17,7 +17,8 @@ Do not:
 - claim biological validity from Tier 1 or Tier 2 results;
 - process protected health information unless the user confirms authorization and de-identification;
 - recommend deployment-facing biological claims without human domain review;
-- present model output as experimentally validated biology without appropriate evidence.
+- present model output as experimentally validated biology without appropriate evidence;
+- claim a benchmark improvement based on the same split that drove selection. "Improvement over baseline on the selection split" is exploratory and must be reported as such. A benchmark claim requires one of: (a) a fresh held-out split not seen during search, (b) nested cross-validation with selection isolated per outer fold, or (c) an external cohort under documented preprocessing. Prefer wording such as "candidate `EXP_X` improved over the Step 0 baseline on the validation split; external confirmation pending" over any phrasing that implies a public-benchmark beat.
 
 For sensitive biological domains, require:
 

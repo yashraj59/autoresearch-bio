@@ -1,13 +1,15 @@
 ---
 name: autoresearch-bio
-description: Create, revise, audit, or launch bounded autonomous ML/software research loops with protected baselines, tiered evals, lineage, metric investigations, and biology no-regression checks.
+description: Create, revise, audit, or launch bounded autonomous ML/software research loops with protected baselines, tiered evals, lineage, metric investigations, leakage pre-flight checks, and biology no-regression checks. Agent-agnostic — produces prompts usable by any coding agent (Claude Code, ChatGPT / Codex, Cursor, Aider, or custom agent harnesses).
 ---
 
 # Autoresearch-Bio Skill
 
-This is a **bio-first, domain-general** skill for creating and supervising bounded, hypothesis-driven autonomous research loops. It is strongest for biological ML, but the core discipline also applies to general ML, software engineering, agent development, benchmarking, infrastructure, and developer-tooling experiments.
+This is a **bio-first, domain-general, agent-agnostic** skill for creating and supervising bounded, hypothesis-driven autonomous research loops. It is strongest for biological ML, but the core discipline also applies to general ML, software engineering, agent development, benchmarking, infrastructure, and developer-tooling experiments.
 
-The skill's default artifact is a paste-ready `autoresearch.md` prompt for a coding agent. It can also produce amendments, decision memos, metric investigation prompts, or reusable skill updates.
+The skill's primary artifact is a paste-ready `autoresearch.md` **prompt for a coding agent** — any coding agent. Tested invocation paths include Claude Code, ChatGPT (Codex / GPT agents), Cursor, Aider, and bespoke agent harnesses built on the Anthropic, OpenAI, or open-source model APIs. The skill itself is written in plain Markdown and contains no vendor-specific tool calls; you can also use it directly as a human-authored prompt template without an agent at all.
+
+The skill can also produce amendments, decision memos, metric investigation prompts, or reusable skill updates.
 
 The invariant is the same in every domain: protect the model or system of record, register baselines before search, use tiered gates, track lineage of experiments, document every result, avoid metric loopholes, and stop cleanly when stop conditions fire.
 
@@ -81,6 +83,14 @@ Typical trigger phrases include:
 For biological projects, emphasize biological no-regression checks, directionality, population structure, pathway/program consistency, data provenance, and safety boundaries.
 
 For non-biological projects, use the same control system but replace biological no-regression checks with protected domain metrics such as correctness, latency, memory, robustness, safety, privacy, security, fairness, slice behavior, regression tests, held-out benchmarks, or policy compliance. Read `references/domain_adaptation.md` when adapting outside biology.
+
+### Launch Precondition: Leakage Pre-Flight
+
+For any search loop with a locked test or held-out split (i.e. essentially every ML / benchmark loop), the agent must produce `leakage_preflight.md` and `split_manifest.json` before launching. The skill refuses to begin Tier 1 runs without them. Full requirements live in `references/core_protocol.md §3.5`. This precondition is non-negotiable because the most common silent failure mode of long autoresearch loops is iterated test-set selection, not bad architecture choices.
+
+### Agent Compatibility
+
+The skill's output artifacts (`autoresearch.md`, amendments, decision memos) are plain Markdown prompts. They are written to drive any coding agent that can read a file, edit code, run a command, and append to a log. Tested or expected to work with: Claude Code, ChatGPT (Codex / GPT agent harnesses), Cursor, Aider, OpenDevin / SWE-agent, custom Anthropic-SDK or OpenAI-SDK agent loops, and the skill can also be used directly as a human-authored prompt template without an agent at all. Do not embed vendor-specific tool calls in skill outputs; keep them portable.
 
 ---
 

@@ -86,11 +86,21 @@ For every new experiment, the agent must:
 
 1. State the parent experiment numbers before changing code.
 2. State the branch type (`root`, `linear`, `fork`, `combine`, `replay`) before changing code.
-3. Add the row to `results.tsv` with `parent_experiment_ids` and `branch_type` filled.
+3. Add the row to `results.tsv` with `parent_experiment_ids`, `branch_type`, and `leakage_guard` filled.
 4. Update the parent's `subtree_status` from `active_leaf` to `expanded` if this is the first child.
 5. Add a one-line lineage note in the journal entry: "Parents: 12, 23. Branch type: combine. Reason: stack gating from 12 with aux loss from 23."
 
 If the agent cannot identify parents, the experiment is a `root`. Do not invent parents.
+
+### Required `leakage_guard` Column
+
+Every row of `results.tsv` must carry a `leakage_guard` value, set from the run's data flow at execution time (not from the pre-flight audit alone):
+
+- `PASS_NO_TEST_SELECTION` — the run read no `locked_test` data, or read it only under `final_evaluation_only` semantics established in `leakage_preflight.md`.
+- `WARN_TEST_READ_FOR_DIAGNOSTICS_ONLY` — `locked_test` data was read, but the agent has explicitly classified the read as `diagnostics_only` with a code citation in `leakage_preflight.md`. Such rows may not feed selection decisions.
+- `FAIL_TEST_IN_SELECTION` — `locked_test` data was read on a selection path (status assignment, gate decision, anchor derivation, warm-start choice, ranked attribution). This row is automatically disqualified from Tier 3 promotion regardless of metric values. The amendment protocol (`core_protocol.md §12`) must be invoked before further runs proceed.
+
+Rows missing the `leakage_guard` column are treated as `FAIL_TEST_IN_SELECTION` by default. Do not silently omit the column.
 
 ---
 
