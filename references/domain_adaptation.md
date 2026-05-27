@@ -157,6 +157,19 @@ Stop or amend when:
 
 ---
 
+## External Baseline Reproduction Provenance
+
+When the non-bio project compares against an external published baseline (e.g. an open-source benchmark suite, a published agent harness, an upstream model implementation), apply the same provenance discipline as `biology_addendum.md`:
+
+- declare `reproduction_mode` per row of any comparator TSV: `upstream_unchanged`, `upstream_patched`, or `full_reimplementation`;
+- declare `claim_strength` and use only the matching wording in reports;
+- declare `upstream_commit_or_release` even for reimplementations;
+- declare `metric_selection_policy` (final epoch, last validation, best observed, single evaluation).
+
+A non-bio `full_reimplementation` may not be reported as a published-baseline beat. Patches must live at `external_baselines/<name>/upstream.patch` with a diff. See `biology_addendum.md "External Baseline Reproduction Provenance"` for the full rule.
+
+---
+
 ## Reporting Requirement
 
 For non-bio final reports, include a short `Domain Adaptation` section:

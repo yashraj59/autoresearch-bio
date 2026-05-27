@@ -308,6 +308,19 @@ Define hard-fail conditions that disqualify regardless of headline improvement:
 - missing required diagnostics;
 - scope or identity violation.
 
+### Metric Identity Across Phase Boundaries
+
+Every protected-metric column has a definitional fingerprint:
+
+- formula or computation steps;
+- inputs (which split, which model checkpoint, which seed convention);
+- directionality;
+- whether the metric compares against a fixed baseline artifact or against the candidate itself.
+
+When the loop crosses a phase boundary — amendment, leakage correction, new prompt, dataset change, evaluator refactor — the agent must emit `METRIC_IDENTITY_DIFF.md` listing, for every gate-bearing column: `previous definition`, `new definition`, `threshold revalidation status` (`unchanged`, `re-derived from new baselines`, `disabled`). A silently redefined column with an unchanged threshold is a metric-laundering pattern and must fail the pre-flight check (§3.5).
+
+Recorded violation in the MoFNet POC: `ig_top_k_overlap` meant *candidate-vs-Step-0-baseline IG top-20 overlap* during `EXP000`–`EXP122`; the leakage-corrected continuation silently redefined it as *cross-seed IG top-20 overlap of the candidate*. Same column name, same 0.70 threshold, fundamentally easier metric. Status label: `METRIC_IDENTITY_DIFF_REQUIRED` (see `decision_labels.md`).
+
 ---
 
 ## 8. Experiment Lifecycle
@@ -465,29 +478,87 @@ Amendments override outdated allocation rules. For example, if a family has repe
 
 ## 13. Literature Search Discipline
 
-Every 5-10 experiments, search the literature and read the research journal.
+The MoFNet POC showed that "search the literature" written as prose is not enough. The agent had a starter file listing three directly-relevant 2025 SOTA papers (HyperCLSA, CMGL, MOGOLA) whose published mechanism (cross-omic attention) the agent then re-invented from scratch across 123 experiments, leaving `papers_consulted.md` byte-identical to its starter. This section makes literature search a structural part of the loop instead of a prose intention.
 
-Search for:
+### Canonical Search Surfaces
 
-- recent SOTA in the model class;
-- known failure modes of the task;
-- standard evaluation metric stacks;
-- adjacent mechanisms from other fields;
-- domain-specific priors.
+The agent must search **at least three** of the following surfaces per literature pass, picked from the relevant domain. Naming them explicitly prevents drift to whatever the agent happens to remember from its training data.
 
-For each paper used, record:
+**Biology / scientific ML:**
+
+- arXiv (`q-bio.*`, `stat.ML`, `cs.LG` subject classes)
+- bioRxiv
+- medRxiv
+- PubMed / NCBI
+- OpenAlex
+- Semantic Scholar
+- Connected Papers (for citation-graph expansion of a known seed paper)
+- OpenReview (NeurIPS / ICLR / ICML bio tracks)
+- Domain databases as search surfaces, not just priors: Reactome, MSigDB, GO, ClinVar, GTEx, ENCODE, Human Cell Atlas (HCA), STRING, KEGG, DepMap. (See `biology_addendum.md` for their use as priors.)
+- When running under Codex or another agent harness that ships a dedicated life-science skill (e.g. `$life-science-research`), invoke it as the primary surface for bio queries and treat the surfaces above as fallbacks. Record the invocation in the literature pass note.
+
+**General ML / software / agents / benchmarking:**
+
+- arXiv (`cs.LG`, `cs.AI`, `cs.CL`, `cs.CV`, `cs.SE`, `stat.ML`)
+- Semantic Scholar
+- OpenReview (NeurIPS / ICLR / ICML / ACL / EMNLP / ICSE / FSE proceedings)
+- Papers with Code
+- NeurIPS / ICLR / ICML proceedings sites
+- ACL Anthology for NLP tasks
+- Google Scholar as a last-resort breadth surface; never as the only surface.
+
+### Agent Fetch Fingerprint
+
+The agent's literature pass must declare its fetch fingerprint in `leakage_preflight.md` (and re-declare on every amendment). The skill remains agent-agnostic — any of the following is acceptable, but the choice must be explicit and consistently applied:
+
+1. **Agent-harness web tools.** `WebSearch` + `WebFetch` available in Claude Code, Codex, Cursor, Aider, or analogous harnesses. The agent must include the tool names it used in the literature pass note. Permissions must allow outbound fetch.
+2. **Semantic Scholar API.** Direct HTTP calls (`https://api.semanticscholar.org/graph/v1/...`) authenticated via `SEMANTIC_SCHOLAR_API_KEY`. The driver records the API version and the search query. Rate-limit aware.
+3. **MCP paper-search server.** Examples: `mcp-paper-search`, `pubmed-mcp`, `arxiv-mcp`, `semantic-scholar-mcp`, `biorxiv-mcp`. The agent declares the server name and version in `leakage_preflight.md` and records the MCP tool calls in the literature pass note.
+
+A loop that declares no fetch fingerprint and produces an unchanged `papers_consulted.md` after the cadence trigger fires is in `LITERATURE_DISCIPLINE_VIOLATION` (see `decision_labels.md`).
+
+### Cadence Triggers
+
+Two independent triggers fire a literature pass. Either is enough.
+
+1. **Fixed cadence.** Every 5–10 experiments. Reading the research journal is part of this pass.
+2. **When-stuck trigger.** A literature pass is required *before the next mechanism is proposed* if any of the following holds:
+   - a family produces **three consecutive Tier 1 discards**;
+   - a Tier 2 failure ships with a **protected-metric regression**;
+   - a metric investigation closes a mechanism class as ruled out;
+   - the multiple-comparison floor (`statistical_promotion.md`) has not been cleared and the experiment count has grown by ≥ 20 since the last literature pass.
+
+   The trigger is recorded with status label `LITERATURE_PASS_REQUIRED_BY_STALL` in `results.tsv` and `family_allocation.md`. Until the literature pass is complete and `papers_consulted.md` has at least one new entry tagged to the stalled family, no new mechanism may launch for that family.
+
+### Starter-File Cross-Check Before First Tier 1 Keep
+
+Before any pre-specified family produces its **first Tier 1 keep**, the agent must cross-check the family against the starter file:
+
+1. read `papers_consulted_starter.md` (and the run-local `papers_consulted.md`);
+2. identify any papers tagged to the family's mechanism class;
+3. for each such paper, ensure the run-local file's `Experiment where it was tried / Outcome` fields are populated for at least one experiment in the family;
+4. if a tagged paper exists in the starter but the family's `Experiment where it was tried` field is empty, halt for a literature pass with status label `LITERATURE_GROUNDING_MISSING` (see `evals/process_checklist.md`).
+
+This is the rule that would have prevented the MoFNet POC from re-inventing cross-omic attention while three referenced papers describing it sat in the starter file with empty outcome fields for 123 experiments.
+
+### Per-Paper Record
+
+For each paper used, record in `papers_consulted.md`:
 
 ```text
 Title
 Authors
-Venue/year
-Link/DOI
-Concrete technique extracted
+Venue / year
+Link / DOI
+Search surface that returned it          # e.g. "Semantic Scholar query 'cross-omic attention BRCA'"
+Fetch fingerprint                          # e.g. "WebFetch in Codex" / "mcp-paper-search v0.3"
+Concrete technique extracted              # one mechanism, not the whole paper
 Which family it supports
-How it maps to existing code
+How it maps to existing code               # module / function / config flag
 Whether it preserves model identity
-Experiment where it was tried
-Outcome
+Experiment where it was tried              # EXPNNN
+Outcome                                    # Tier 1 keep / discard / Tier 2 fail / etc.
+Notes / caveats / follow-ups
 ```
 
 Do not implement an entire paper. Extract one concrete mechanism and test it with the smallest compatible change.

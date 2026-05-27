@@ -1,6 +1,40 @@
 # Changelog
 
-## Unreleased — Leakage pre-flight, process-loophole guardrails, reproducibility identity, agent-agnostic framing
+## Unreleased — Literature search hardening, resumability, and provenance discipline
+
+### Added
+
+- **`references/core_protocol.md §13 "Literature Search Discipline"` — replaced wholesale.** Names canonical search surfaces by domain (biology: arXiv q-bio / bioRxiv / medRxiv / PubMed / OpenAlex / Semantic Scholar / Connected Papers / OpenReview / Reactome / MSigDB / GO / ClinVar / GTEx / ENCODE / HCA / STRING / KEGG / DepMap; general ML: arXiv / Semantic Scholar / OpenReview / Papers with Code / proceedings sites / ACL Anthology). At least three per pass. References the Codex `$life-science-research` skill as a primary bio surface when available. Specifies a three-mode fetch fingerprint (`agent_harness_web_tools` / `semantic_scholar_api` / `mcp_paper_search`) declared in `leakage_preflight.md` and `papers_consulted.md`. Adds a "when-stuck" trigger independent of fixed cadence: three consecutive Tier 1 discards in a family, a Tier 2 failure with protected-metric regression, a metric investigation that rules out a mechanism class, or +20 experiments without clearing the multiple-comparison floor. Trigger label: `LITERATURE_PASS_REQUIRED_BY_STALL`. Adds the starter-file cross-check before any family's first Tier 1 keep: tagged papers must have populated `Experiment where it was tried / Outcome` fields. Failure label: `LITERATURE_GROUNDING_MISSING`. The per-paper record now includes search-surface and fetch-fingerprint fields.
+- **`references/core_protocol.md §7 "Metric Identity Across Phase Boundaries"`.** Every gate-bearing column has a definitional fingerprint. Phase boundaries (amendment, leakage correction, prompt rewrite, evaluator refactor) require `METRIC_IDENTITY_DIFF.md`. Failure label: `METRIC_IDENTITY_DIFF_REQUIRED`.
+- **`references/lineage.md` — new `grid_sweep` branch type.** Three or more children of one parent that share a mechanism class and differ only in continuous/categorical hyperparameters. Only the best child per sweep may advance to Tier 2; sweep axes are documented in `family_allocation.md` so the multiple-comparison floor correctly attributes the candidate count.
+- **`references/artifact_retention.md` — four new sections.**
+  - "Resumability Discipline" — `*HANDOFF*.md` cap ~8 KB, mandatory `STATE_OF_PLAY.md` (≤2 KB, replaced not appended), `insights/INSIGHT_BRIEF_NNN.md` cadence every 10 experiments. Failure labels: `RESUMABILITY_STATE_OF_PLAY_STALE`, `RESUMABILITY_INSIGHT_BRIEFS_MISSING`, `HANDOFF_DOCUMENT_OVERSIZED`.
+  - "`insights/INSIGHT_BRIEF_NNN.md` Schema" — required fields (experiment-num range, family-allocation snapshot, what was learned, what is not being pursued, next 5 planned experiments).
+  - "Append-Only Log Hygiene" — forbidden placeholder titles (`TMP`, `TODO`, `XXX`, `FIXME`); closure must backfill or delete orphans. Failure label: `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED`.
+  - "Single Source Of Truth For Reference Numbers" — plot/PDF/blog generators must read comparator numbers from `BASELINE_REGISTRY.md` or `external_public_baselines.tsv`, never from hardcoded module constants. Failure label: `REFERENCE_NUMBER_HARDCODED_IN_REPORT`.
+- **`references/biology_addendum.md` + `references/domain_adaptation.md` — "External Baseline Reproduction Provenance"** identical rule in both. Every comparator-TSV row must declare `reproduction_mode` (`upstream_unchanged` / `upstream_patched` / `full_reimplementation`), `claim_strength`, `upstream_commit_or_release`, `metric_selection_policy`. A `full_reimplementation` may not be reported as a published-baseline reproduction. Failure labels: `REPRODUCTION_PROVENANCE_MISSING`, `EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED`.
+- **`references/decision_labels.md` — new label block** covering all of the above with one-line semantics.
+- **`evals/process_checklist.md` — five new check blocks.** Tightened literature discipline (untouched-starter + stall-triggered pass + starter cross-check before first Tier 1 keep), resumability & cognitive checkpoint (STATE_OF_PLAY presence/staleness, INSIGHT_BRIEF cadence, handoff size), metric identity at phase boundaries, append-only log hygiene, external-baseline reproduction provenance, reference-number single source of truth.
+- **`scripts/validate_autoresearch_artifacts.py` — new validators.**
+  - `grid_sweep` added to `VALID_BRANCH_TYPES` and the single-parent constraint.
+  - `validate_resumability()` — STATE_OF_PLAY presence/size, INSIGHT_BRIEF cadence at N≥100, handoff size cap.
+  - `validate_append_only_logs()` — scans for orphan markers (`TMP` / `TODO` / `XXX` / `FIXME` / `<...>` / `<TBD>`).
+  - `validate_external_baselines_tsv()` — checks required reproduction-provenance columns and the "reimplementation claiming reproduction" anti-pattern.
+- **`assets/papers_consulted_starter.md` — rewritten** with the canonical search surfaces, the fetch-fingerprint declaration template, and the extended per-paper record fields.
+
+### Changed
+
+- `references/artifact_retention.md` "Required Documentation Files" table now lists `STATE_OF_PLAY.md`, `leakage_preflight.md`, `split_manifest.json`, and `METRIC_IDENTITY_DIFF.md` alongside the existing required artifacts.
+- `family_allocation.md`'s prescribed contents now include sweep-axis documentation.
+
+### Motivating evidence
+
+- The MoFNet POC had 123 experiments and `papers_consulted.md` byte-identical to its starter. The starter listed three 2025 SOTA papers using cross-omic attention (HyperCLSA, CMGL, MOGOLA). The agent invented Family 1 (cross-omic attention) from scratch while those references sat in the file with empty outcome fields. Zero arXiv / DOI / "et al." references appeared in 113 KB of research-journal text. Zero HTTP requests to bioRxiv / arXiv / PubMed / Semantic Scholar in any Python driver. The "search the literature" rule existed only as prose; this release converts it to (a) named surfaces, (b) declared fetch fingerprint, (c) when-stuck trigger, (d) starter-file cross-check enforced by the validator and by a `LITERATURE_GROUNDING_MISSING` status label.
+- `insights/` was empty across 139 experiments; `CODEX_HANDOFF.md` reached 24 KB of append-only chat-style chronology. The resumability section converts the implicit cadence rule into a machine-checkable cap.
+- `architectural_changes_log.md` had 4 `## TMP` orphan blocks from an aborted sweep; the new orphan-marker scan catches this class.
+- `external_public_baselines.tsv` lacked any `reproduction_mode` column. `mobrca_net_py37_compat.py` is a 237-line from-scratch reimplementation logged with the canonical upstream URL as `source_repo`. The new provenance columns force a `full_reimplementation` row to label itself as such.
+
+## Previously Unreleased — Leakage pre-flight, process-loophole guardrails, reproducibility identity, agent-agnostic framing
 
 ### Added
 

@@ -39,6 +39,7 @@ A node is identified by its `experiment_num`. Parents are identified by their `e
 | `root` | First experiment in a family, or a Step 0 baseline | 0 |
 | `linear` | Direct extension of one parent. The most common case | 1 |
 | `fork` | Two or more sibling variants from the same single parent, exploring different directions | 1 |
+| `grid_sweep` | Three or more children of the same parent that share a mechanism class and differ only in continuous or categorical hyperparameter values | 1 |
 | `combine` | Combines mechanisms from two or more parents into one child | 2 or more |
 | `replay` | Re-runs a previous experiment with a different seed, split, or evaluation. Same architecture as parent | 1 |
 
@@ -48,6 +49,7 @@ Notes:
 - Tier 3 generalization of a Tier 2 pass is also a `replay`, for the same reason.
 - A `combine` node must list all parents whose mechanisms were used. Listing only one parent and mentioning the others in prose breaks the lineage.
 - A `fork` and a `linear` look similar but the semantic intent is different. `fork` means you intentionally created sibling variants at the same time. `linear` means you extended one experiment with one new mechanism. Use the labels honestly.
+- `grid_sweep` is for hyperparameter grids over a single mechanism class (e.g. `attention_heads ∈ {1, 2, 4, 8}` × `dropout ∈ {0.2, 0.35, 0.5}`). Tagging a 12-row grid as 12 separate `fork` children is dishonest lineage and inflates the multiple-comparison count. Sweep children share one `grid_sweep` parent node, and at most one child per sweep may advance to Tier 2 (the best on validation; see `statistical_promotion.md`). Document the sweep axes in `family_allocation.md` so the multiple-comparison floor can correctly attribute the candidate count.
 
 ---
 
