@@ -211,10 +211,13 @@ IDENTITY_BLOCK_INCOMPLETE
 ARCHITECTURAL_LOG_TEMPLATE_ONLY
 IDENTITY_VIOLATIONS_LOG_SKELETON
 RESOURCE_PROVENANCE_VIOLATION
+RESUMABILITY_STATE_OF_PLAY_STALE
+RESUMABILITY_STATE_OF_PLAY_OVERSIZED
 RESUMABILITY_INSIGHT_BRIEFS_MISSING
 HANDOFF_DOCUMENT_OVERSIZED
 REPRODUCTION_PROVENANCE_MISSING
 EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED
+REFERENCE_NUMBER_HARDCODED_IN_REPORT
 SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR
 ```
 
@@ -227,8 +230,11 @@ Semantics, briefly:
 - `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED` — orphan rows (TMP / TODO / template-only) survive closure. Blocks Tier 3 promotion for any candidate whose lineage passes through the affected log section.
 - `IDENTITY_BLOCK_INCOMPLETE` — a per-experiment `summary.json` lacks the required identity block (see `artifact_retention.md`). The row is excluded from promotion evidence.
 - `ARCHITECTURAL_LOG_TEMPLATE_ONLY`, `IDENTITY_VIOLATIONS_LOG_SKELETON`, `RESOURCE_PROVENANCE_VIOLATION` — stub-compliance failures detected by the validation script (see `evals/process_checklist.md`).
+- `RESUMABILITY_STATE_OF_PLAY_STALE` — `STATE_OF_PLAY.md` is missing or older than the most recent `results.tsv` row.
+- `RESUMABILITY_STATE_OF_PLAY_OVERSIZED` — `STATE_OF_PLAY.md` exceeds the ~2 KB cap (it is state, not history).
 - `RESUMABILITY_INSIGHT_BRIEFS_MISSING` — ≥100 experiments with an empty `insights/` directory (see `artifact_retention.md`).
 - `HANDOFF_DOCUMENT_OVERSIZED` — `CODEX_HANDOFF.md` or equivalent exceeds the ~8 KB state cap. Blocks closure until trimmed.
+- `REFERENCE_NUMBER_HARDCODED_IN_REPORT` — a plot/PDF/blog generator embeds a numeric comparator as a module constant instead of reading from `BASELINE_REGISTRY.md` or `external_public_baselines.tsv`. Caught by code review rather than the validator (see `artifact_retention.md`).
 - `REPRODUCTION_PROVENANCE_MISSING` — a row in `external_public_baselines.tsv` lacks `reproduction_mode`, `claim_strength`, `upstream_commit_or_release`, or `metric_selection_policy` (see `biology_addendum.md` / `domain_adaptation.md`).
 - `EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED` — a `full_reimplementation` row claims `upstream_unchanged` semantics, or a plot/PDF/blog renders the row without the required reimplementation label.
 - `SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR` — experiment cap reached with no candidate clearing the family-wise multiple-comparison floor (see `statistical_promotion.md`).

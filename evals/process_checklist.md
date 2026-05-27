@@ -138,12 +138,12 @@ When the journal records a phase boundary (amendment, leakage correction, evalua
 
 ### Append-Only Log Hygiene
 
-Scan `results.tsv`, `architectural_changes_log.md`, `family_allocation.md`, `papers_consulted.md`, `research_journal.md` for orphan markers:
+Scan the Markdown logs `architectural_changes_log.md`, `family_allocation.md`, `papers_consulted.md`, `research_journal.md` for orphan markers:
 
-- titles `TMP`, `TODO`, `<...>`, `XXX`, `FIXME`, or any uppercase placeholder;
+- entry titles `TMP`, `TODO`, `<...>`, `<TBD>`, `XXX`, `FIXME`, or any all-uppercase placeholder;
 - two consecutive entries whose bodies are byte-identical despite different titles or differing hyperparameters in `results.tsv`.
 
-Orphan rows that survive closure → `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED`.
+Orphan rows that survive closure → `APPEND_ONLY_LOG_ORPHAN_UNRESOLVED`. The matching check on `results.tsv` (empty `description` / `architectural_change` cells, repeated `architectural_change` text across rows with differing hyperparameters) is reviewed at closure rather than by the validator, because TSV rows have structured fields rather than free-text placeholder titles.
 
 ### External Baseline Reproduction Provenance
 

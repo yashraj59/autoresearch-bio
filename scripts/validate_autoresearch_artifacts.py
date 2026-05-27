@@ -356,13 +356,28 @@ def validate_external_baselines_tsv(path: Path) -> list[str]:
                     f"{path.name} row {i}: invalid reproduction_mode '{mode}'. "
                     f"Must be one of {sorted(VALID_REPRODUCTION_MODES)}."
                 )
-            if mode == "full_reimplementation" and "reproduc" in claim:
-                errors.append(
-                    f"{path.name} row {i}: reproduction_mode='full_reimplementation' but "
-                    f"claim_strength reads as 'reproduced …'. A reimplementation is not a "
-                    f"reproduction of the published numbers. "
-                    f"Label: EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED."
+            if mode == "full_reimplementation":
+                # Affirmative reproduction claim: "reproduced upstream X" or
+                # "reproduction of upstream X". The canonical correct wording is
+                # "compat-equivalent reimplementation, not a reproduction of the
+                # published numbers" — that contains "reproduction" only inside the
+                # negation phrase "not a reproduction", which is the correct form.
+                has_affirmative_claim = (
+                    "reproduced" in claim
+                    or re.search(r"\breproduction\s+of\b", claim) is not None
                 )
+                has_negation = (
+                    "not a reproduction" in claim
+                    or "not reproduced" in claim
+                    or "not a reproduc" in claim  # tolerate truncations
+                )
+                if has_affirmative_claim and not has_negation:
+                    errors.append(
+                        f"{path.name} row {i}: reproduction_mode='full_reimplementation' but "
+                        f"claim_strength reads as 'reproduced …'. A reimplementation is not a "
+                        f"reproduction of the published numbers. "
+                        f"Label: EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED."
+                    )
             for col in EXTERNAL_BASELINE_REQUIRED_COLUMNS:
                 if not row.get(col, "").strip():
                     errors.append(
