@@ -59,9 +59,12 @@ VALID_LEAKAGE_GUARDS = {
     "FAIL_TEST_IN_SELECTION",
 }
 
-# Reserved substrings forbidden in any auto-emitted status label
+import re
+
+# Reserved tokens forbidden in any auto-emitted status label
 # (see references/decision_labels.md "Reserved Strings In Automated Status Labels").
-RESERVED_STATUS_SUBSTRINGS = (
+# Claim-strength tokens match as bare uppercase words.
+RESERVED_STATUS_CLAIM_TOKENS = (
     "BEAT",
     "SOTA",
     "WINS",
@@ -69,17 +72,46 @@ RESERVED_STATUS_SUBSTRINGS = (
     "SURPASSES",
     "STATE_OF_THE_ART",
     "BENCHMARK_WIN",
-    "ABOVE_REFERENCE",
-    "BELOW_REFERENCE",
-    "MATCHES_REFERENCE",
-    "WITHIN_X_OF",
-    "EXCEEDS_REFERENCE",
-    "MISSES_REFERENCE",
+)
+# Comparator-relative tokens match (ABOVE|BELOW|MATCHES|WITHIN|EXCEEDS|MISSES) followed
+# by zero or more uppercase qualifier segments, ending in a reference noun. This catches
+# both direct forms (BELOW_REFERENCE) and qualified forms (BELOW_PUBLIC_REFERENCE).
+# We anchor on `_` rather than `\b` because underscore is a regex word char.
+RESERVED_RELATIVE_PATTERN = re.compile(
+    r"(?:^|_)(ABOVE|BELOW|MATCHES|WITHIN|EXCEEDS|MISSES)"
+    r"(?:_[A-Z][A-Z0-9_]*?)?_"
+    r"(REFERENCE|BENCHMARK|BASELINE|TARGET|PUBLIC|UPSTREAM|SOTA)"
+    r"(?=_|$|[^A-Z0-9_])"
 )
 
 
-def validate_results_rows(rows: list[dict[str, str]]) -> list[str]:
+def _reserved_violation(status: str) -> str | None:
+    """Return the offending substring if `status` violates either reserved rule.
+
+    Claim tokens (BEAT, SOTA, ...) match as substrings since they tend to appear
+    surrounded by underscores in compound labels like `*_REFERENCE_BEAT`. The
+    relative pattern uses a regex to catch both `*_BELOW_REFERENCE` and the
+    qualified `*_BELOW_PUBLIC_REFERENCE` variant.
+    """
+    upper = status.upper()
+    for token in RESERVED_STATUS_CLAIM_TOKENS:
+        if token in upper:
+            return token
+    match = RESERVED_RELATIVE_PATTERN.search(upper)
+    if match:
+        return match.group(0)
+    return None
+
+
+def validate_results_rows(
+    rows: list[dict[str, str]],
+    header_columns: set[str] | None = None,
+) -> list[str]:
+    """Run per-row checks. Skips per-row checks for columns missing from the header
+    (those are already reported once at header level)."""
     errors: list[str] = []
+    header_columns = header_columns if header_columns is not None else set()
+    has_leakage_guard = "leakage_guard" in header_columns or not header_columns
     for i, row in enumerate(rows, start=2):  # row 2 is first data row (1 is header)
         branch_type = row.get("branch_type", "").strip()
         parent_ids = row.get("parent_experiment_ids", "").strip()
@@ -119,25 +151,24 @@ def validate_results_rows(rows: list[dict[str, str]]) -> list[str]:
                     f"results.tsv row {i} (exp {exp_num}): branch_type 'combine' must have two or more parents"
                 )
 
-        if not leakage_guard:
-            errors.append(
-                f"results.tsv row {i} (exp {exp_num}): missing leakage_guard column "
-                f"(default treats missing as FAIL_TEST_IN_SELECTION)"
-            )
-        elif leakage_guard not in VALID_LEAKAGE_GUARDS:
-            errors.append(
-                f"results.tsv row {i} (exp {exp_num}): invalid leakage_guard '{leakage_guard}'. "
-                f"Must be one of {sorted(VALID_LEAKAGE_GUARDS)}"
-            )
-
-        status_upper = status.upper()
-        for reserved in RESERVED_STATUS_SUBSTRINGS:
-            if reserved in status_upper:
+        if has_leakage_guard:
+            if not leakage_guard:
                 errors.append(
-                    f"results.tsv row {i} (exp {exp_num}): status '{status}' contains reserved substring "
-                    f"'{reserved}' (see decision_labels.md 'Reserved Strings In Automated Status Labels')"
+                    f"results.tsv row {i} (exp {exp_num}): empty leakage_guard cell "
+                    f"(treated as FAIL_TEST_IN_SELECTION)"
                 )
-                break
+            elif leakage_guard not in VALID_LEAKAGE_GUARDS:
+                errors.append(
+                    f"results.tsv row {i} (exp {exp_num}): invalid leakage_guard '{leakage_guard}'. "
+                    f"Must be one of {sorted(VALID_LEAKAGE_GUARDS)}"
+                )
+
+        offender = _reserved_violation(status)
+        if offender is not None:
+            errors.append(
+                f"results.tsv row {i} (exp {exp_num}): status '{status}' contains reserved token "
+                f"'{offender}' (see decision_labels.md 'Reserved Strings In Automated Status Labels')"
+            )
 
     return errors
 
@@ -240,10 +271,11 @@ def main(argv: list[str]) -> int:
             missing = [col for col in REQUIRED_RESULTS_COLUMNS if col not in header]
             if missing:
                 errors.append(f"results.tsv missing columns: {', '.join(missing)}")
-                rows = []
-            else:
-                rows = list(reader)
-                errors.extend(validate_results_rows(rows))
+            # Always parse rows, even when columns are missing — row-level checks
+            # for non-missing columns (e.g. reserved-substring scan over `status`)
+            # still apply, and DictReader returns "" for any missing field.
+            rows = list(reader)
+            errors.extend(validate_results_rows(rows, header_columns=set(header)))
             experiment_count = len(rows)
 
     baseline_path = run_dir / "BASELINE_REGISTRY.md"
