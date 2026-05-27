@@ -12,7 +12,7 @@ In fully autonomous mode, the human is removed from the inner loop. Instead, whe
 
 Before using council mode, read these limitations. They are not theoretical, they are the failure modes I have seen.
 
-**Same model, different prompts.** All council members are instances of the same underlying LLM, distinguished only by role prompts. They are not independent samples from a population of opinions. Their confidence estimates are correlated. They tend to converge faster than truly independent agents would. Treat consensus with appropriate skepticism.
+**Same model, different prompts (the default).** By default, all council members are instances of the same underlying LLM, distinguished only by role prompts. They are not independent samples from a population of opinions. Their confidence estimates are correlated. They tend to converge faster than truly independent agents would. Treat consensus with appropriate skepticism. The opt-in multi-vendor configuration below directly mitigates this; see "Council Model Diversity."
 
 **The Biologist role is not a real biologist.** An LLM role-playing biologist is not a substitute for actual domain expertise. For biology projects, any council decision that affects biological interpretation, marker choice, pathway logic, fate biology, or domain-expert claims should escalate to the user. The council is fine for compute decisions, mechanism variants, evaluation tweaks, and statistical methodology. It is not fine for biology calls.
 
@@ -49,6 +49,61 @@ Recommended structure: four agents plus one monitor. All agents are independent 
 | Monitor | Documents, enforces process, finds weaknesses in consensus, calls votes. Never proposes. |
 
 Smaller councils often degenerate into point-counterpoint without genuine diversity. Larger councils increase cost without necessarily adding distinct epistemic stances.
+
+---
+
+## Council Model Diversity
+
+By default, all five council roles are run on the same underlying LLM with different role prompts. This is the easy onramp and works when you only have one model vendor available. It is also the configuration the "Same model, different prompts" limitation in the Honest Limitations section warns about: their priors and training data are identical, so their confidence estimates are correlated.
+
+You can also configure a multi-vendor council where different roles run on different model vendors. This is the recommended setup for closure-critical decisions if you have multiple API keys.
+
+### Config shape
+
+A single `council_models` block declared alongside the autoresearch prompt or in the council's launch config.
+
+**Easy mode (single vendor, default):**
+
+```yaml
+council_models: same_model_all_roles
+```
+
+**Multi-vendor mode:**
+
+```yaml
+council_models:
+  architect:     anthropic/claude-opus-4.7
+  skeptic:       openai/gpt-5.5-pro
+  methodologist: google/gemini-pro
+  biologist:     anthropic/claude-opus-4.7   # repeats across roles are allowed
+  monitor:       openai/gpt-5.5-pro
+```
+
+Vendors are identified by `<provider>/<model>` so the skill stays agent-agnostic. Authentication is via env vars (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`, and so on). The orchestrator handles the actual API calls; the skill specifies the protocol only.
+
+### Recommendation
+
+At least two distinct vendors across the five roles, ideally three. All-same-vendor stays a valid configuration but the council closure log records `council_diversity: single_vendor` so anyone reading the report sees the limitation explicitly. Multi-vendor councils write `council_diversity: multi_vendor` with the per-role vendor list.
+
+### New failure modes to plan for
+
+- **Cost variance.** Different vendors have different per-call prices and the 25 to 35 LLM calls per closure can be unevenly distributed. Pre-compute the expected cost of one closure across the configured roster before launching a long autonomous arc.
+
+- **Latency variance.** API roundtrips differ across providers and the slowest member sets the pace. Set a per-call timeout (e.g. 60 seconds) and fall back to your primary vendor for that role on timeout. Log every fallback.
+
+- **Role-vendor confounding.** If Skeptic is GPT and Architect is Claude, a Skeptic-versus-Architect disagreement can be the role doing its job or can be GPT-versus-Claude. Rotate vendor assignments across closures, or run the same closure twice with a swapped roster as a robustness check, before promoting any council amendment that survived only a single configuration.
+
+- **Output format drift.** Each vendor's structured-output mode is slightly different. The orchestrator must normalize every agent's response to the council's scoring schema before scoring proceeds. The skill specifies the schema; the orchestrator handles conversion.
+
+- **Vendor monoculture across runs.** Running the same five vendors on every closure introduces a different correlation, across closures rather than across roles in one closure. The existing rule that three consecutive same-direction councils escalate (see "Hard Escalation Triggers") partially catches this, but treat any roster you reuse for many closures with the same skepticism you treat single-vendor councils.
+
+### Fallback behavior
+
+If a configured vendor's API key is missing at launch, the orchestrator falls back to your primary vendor for that role and writes `COUNCIL_MULTI_VENDOR_FALLBACK_USED` into the council closure log (see `decision_labels.md`). If a configured vendor times out or returns an error mid-council, same fallback, same label. The closure report cites which roles fell back and why so the reader can weigh consensus appropriately.
+
+### What this does not buy you
+
+Multi-vendor councils break some correlation but not all of it. Vendors share large overlapping training corpora (Common Crawl, public benchmarks, academic papers). Three different model providers trained on similar web data are not three independent observers. They are three models that will still agree about most established methodology and most published mechanism classes. The diversity is real but bounded. Treat consensus across vendors as stronger evidence than consensus within one vendor, but not as a measurement.
 
 ---
 

@@ -1,5 +1,42 @@
 # Changelog
 
+## Unreleased — Council multi-vendor option + README rewrites
+
+### Added
+
+- **`references/debate_council.md "Council Model Diversity"` (new section).** The Debate Council now supports an opt-in multi-vendor configuration where each role (Architect, Skeptic, Methodologist, Biologist or domain specialist, Monitor) can run on a different model vendor. Config shape:
+
+  ```yaml
+  council_models:
+    architect:     anthropic/claude-opus-4.7
+    skeptic:       openai/gpt-5.5-pro
+    methodologist: google/gemini-pro
+    biologist:     anthropic/claude-opus-4.7
+    monitor:       openai/gpt-5.5-pro
+  ```
+
+  Or the default easy onramp:
+
+  ```yaml
+  council_models: same_model_all_roles
+  ```
+
+  Recommendation is at least two distinct vendors across the five roles for closure-critical decisions; all-same-vendor remains valid but is logged as `council_diversity: single_vendor`. New failure modes (cost variance, latency variance, role-vendor confounding, output format drift, vendor monoculture across runs) are documented in the same section. The skill specifies the protocol; the actual API orchestration is the user's harness responsibility.
+
+- **`references/decision_labels.md` new label `COUNCIL_MULTI_VENDOR_FALLBACK_USED`.** Fires when a configured role falls back to the primary vendor because of a missing API key, timeout, or error mid-council.
+
+### Changed
+
+- **`references/debate_council.md "Same model, different prompts"` warning.** Reworded to note that this applies to the default single-vendor configuration and points the reader at the new Council Model Diversity section as the mitigation.
+
+- **`README.md` Lineage tracking section.** Rewritten from changelog framing ("This revision adds a lightweight DAG layer...") to user-facing feature description ("Every experiment records its parent IDs and a branch type...").
+
+- **`README.md` Debate Council section.** Rewritten from changelog framing ("This revision keeps the Debate Council as an opt-in option...") to user-facing description that names the five roles (Architect, Skeptic, Methodologist, Biologist or domain specialist, Monitor), describes what the council actually does (propose, steelman, debate, score, vote, write amendment), and surfaces the new multi-vendor option as the recommended configuration for closure-critical decisions.
+
+### Motivating evidence
+
+The current "Same model, different prompts" limitation in `debate_council.md` line 15 is the council's most-acknowledged weakness. Role prompts give you four prompt variations of one underlying model, not four independent models. Multi-vendor configuration directly mitigates this by introducing genuine distribution diversity across council members, while keeping the default single-vendor configuration as a valid easy onramp for users with only one API key.
+
 ## Unreleased — External baseline split parity
 
 ### Added

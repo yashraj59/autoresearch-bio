@@ -102,15 +102,11 @@ Read `references/domain_adaptation.md` if you are using this outside biology.
 
 ## Lineage tracking
 
-This revision adds a lightweight DAG layer. Every experiment now records its parent experiments and whether it is a linear extension, a fork, or a combination of two or more parents. The flat `results.tsv` log was hiding real structure in the search, especially for combinatorial architectures where you are stacking many components and want to know which child came from which parent. Read `references/lineage.md` for the rules.
+Every experiment records its parent IDs and a branch type. A linear extension has one parent, a fork creates sibling variants from one parent, and a combine merges mechanisms from two or more parents. The flat `results.tsv` log hides this structure in combinatorial search where you stack components and lose track of which child came from which parent. If your search is mostly linear extensions, the layer is light overhead. If your search combines mechanisms across families, it pays for itself the first time you reconstruct the path to a Tier 3 win or prune a whole subtree at once. See `references/lineage.md` for the rules and the full list of branch types.
 
-If your workflow is mostly linear extensions, the lineage layer adds very little overhead. If your workflow is combinatorial, it pays for itself the first time you want to reconstruct the actual chain that led to a Tier 3 win or prune a whole subtree at once.
+## Debate Council
 
-## Debate Council is optional
-
-This revision keeps the Debate Council mode as an opt-in option for fully autonomous runs, but the default is supervised mode. When a stop condition fires, the loop halts and waits for a human, unless you have explicitly enabled autonomous mode.
-
-I kept the council because it can be useful for very long search arcs where the human is not in the inner loop. But I made it clearer that the council is not a substitute for domain expertise, especially for biology decisions, and the confidence thresholds inside the council are starting heuristics, not measurements. Read `references/debate_council.md` and `references/amendment_review_checklist.md` for the details.
+The default is supervised mode: when a stop condition fires the loop halts and waits for a human. There is also an opt-in autonomous mode called the Debate Council, useful for long search arcs where you cannot stay in the inner loop yourself. The council runs five role-prompted agents (Architect, Skeptic, Methodologist, Biologist or domain specialist, plus a non-voting Monitor) that propose, steelman, debate, score, and vote on the next amendment that continues, escalates, or closes the loop. By default all five are instances of the same underlying LLM with different role prompts, so their confidence is correlated and consensus is not independent evidence. The council also supports an opt-in multi-vendor configuration where you assign different roles to different model vendors (e.g. Architect on Claude, Skeptic on GPT, Methodologist on Gemini) when you have multiple API keys; this breaks the correlation and is recommended for closure-critical decisions. The council is a heuristic, not a measurement, and is not a substitute for domain expertise, especially for biology decisions where the Biologist role must escalate to a real human. See `references/debate_council.md` and `references/amendment_review_checklist.md`.
 
 ## Acknowledgments
 
