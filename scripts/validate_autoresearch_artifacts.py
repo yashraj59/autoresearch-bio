@@ -341,6 +341,15 @@ VALID_SPLIT_PARITY = {
 }
 
 
+PROVENANCE_COLUMNS = {
+    "reproduction_mode",
+    "claim_strength",
+    "upstream_commit_or_release",
+    "metric_selection_policy",
+}
+SPLIT_PARITY_COLUMNS = {"eval_split", "split_parity"}
+
+
 def validate_external_baselines_tsv(path: Path) -> list[str]:
     if not path.exists():
         return []
@@ -348,12 +357,27 @@ def validate_external_baselines_tsv(path: Path) -> list[str]:
     with path.open("r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter="\t")
         header = reader.fieldnames or []
-        missing = [c for c in EXTERNAL_BASELINE_REQUIRED_COLUMNS if c not in header]
-        if missing:
+        missing_provenance = [
+            c for c in EXTERNAL_BASELINE_REQUIRED_COLUMNS
+            if c in PROVENANCE_COLUMNS and c not in header
+        ]
+        missing_parity = [
+            c for c in EXTERNAL_BASELINE_REQUIRED_COLUMNS
+            if c in SPLIT_PARITY_COLUMNS and c not in header
+        ]
+        if missing_provenance:
             errors.append(
-                f"{path.name} missing reproduction-provenance columns: {', '.join(missing)}. "
+                f"{path.name} missing reproduction-provenance columns: "
+                f"{', '.join(missing_provenance)}. "
                 f"Label: REPRODUCTION_PROVENANCE_MISSING."
             )
+        if missing_parity:
+            errors.append(
+                f"{path.name} missing split-parity columns: "
+                f"{', '.join(missing_parity)}. "
+                f"Label: EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED."
+            )
+        if missing_provenance or missing_parity:
             return errors
         for i, row in enumerate(reader, start=2):
             mode = row.get("reproduction_mode", "").strip()
