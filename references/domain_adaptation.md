@@ -164,9 +164,10 @@ When the non-bio project compares against an external published baseline (e.g. a
 - declare `reproduction_mode` per row of any comparator TSV: `upstream_unchanged`, `upstream_patched`, or `full_reimplementation`;
 - declare `claim_strength` and use only the matching wording in reports;
 - declare `upstream_commit_or_release` even for reimplementations;
-- declare `metric_selection_policy` (final epoch, last validation, best observed, single evaluation).
+- declare `metric_selection_policy` (final epoch, last validation, best observed, single evaluation);
+- declare `eval_split` (which role from `split_manifest.json` the score was computed on), `split_parity` (`same_train_same_eval` / `same_train_different_eval` / `different_train_different_eval`), and `split_manifest_sha256`.
 
-A non-bio `full_reimplementation` may not be reported as a published-baseline beat. Patches must live at `external_baselines/<name>/upstream.patch` with a diff. See `biology_addendum.md "External Baseline Reproduction Provenance"` for the full rule.
+A non-bio `full_reimplementation` may not be reported as a published-baseline beat. A `different_train_different_eval` row is a ballpark reference, not a head-to-head, and may not be cited as evidence in "the model beats X" claims. Patches must live at `external_baselines/<name>/upstream.patch` with a diff. See `biology_addendum.md "External Baseline Reproduction Provenance"` for the full rule and `biology_addendum.md "External Baseline Split Parity"` for the split parity columns.
 
 ---
 

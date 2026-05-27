@@ -115,6 +115,23 @@ Every row of `external_public_baselines.tsv` (or the equivalent comparator TSV) 
 
 A `full_reimplementation` row may not be claimed as a benchmark-reproduction win. Any plot, PDF, or blog generator that displays an `external_public_baselines.tsv` comparator must read these columns and label `full_reimplementation` rows visibly as such (legend, footnote, or table column).
 
+### External Baseline Split Parity
+
+Reproduction provenance is necessary but not sufficient. The MoFNet POC also showed that running an external baseline on its own native preprocessed split (MOGONET BRCA, 875 samples, 1000 features per omic) and comparing against the project's model on the project's split (MLOmics GS-BRCA, 671 samples, Top-selected features) produces a comparison that looks like a head-to-head but is not one. Different samples, different features, different train/test partitions. The comparison is in the same upstream cohort ballpark but is not a benchmark claim.
+
+Every row of `external_public_baselines.tsv` (or equivalent) must therefore also declare:
+
+- **`eval_split`** — the role from `split_manifest.json` the score was computed on, exactly one of `train`, `validation`, `locked_test`, `legacy_test`, `external_cohort_<name>`, or `native_external_split_<name>`. The first four mean "this external was trained on this project's `train` indices and evaluated on the named held-out role"; `external_cohort_*` means a separate cohort the project pre-registered; `native_external_split_*` means the external was run on its own native preprocessed split (not the project's split) and the comparison is therefore loose.
+- **`split_parity`** — one of:
+  - `same_train_same_eval` — the external was trained on the project's `train` indices and evaluated on the project's held-out indices (the apples-to-apples case);
+  - `same_train_different_eval` — same train, different held-out (rare; document why);
+  - `different_train_different_eval` — the external used its own native split; comparison is ballpark only.
+- **`split_manifest_sha256`** — the SHA-256 of the project's `split_manifest.json` at the time the external was trained. Pins which version of the split parity holds. Empty for `different_train_different_eval` rows.
+
+`split_parity = different_train_different_eval` rows may not be cited as evidence in any "the model beats X" claim. They are documentary context. Plots and reports rendering them must label them as "different-split reference comparison" or equivalent.
+
+The autoresearch-bio recommended workflow for externals is: write a script that loads your `split_manifest.json`, trains each external on the `train` indices using the external's documented default hyperparameters, evaluates the trained model separately on each held-out role (`validation`, `locked_test`, `legacy_test`), and writes one row per `(external, eval_split)` pair with `split_parity = same_train_same_eval`. The mofnet_poc repository at `scripts/run_externals_same_mlomics_split.py` is the worked example this rule was extracted from.
+
 ---
 
 ## External Biological Resources

@@ -326,11 +326,18 @@ EXTERNAL_BASELINE_REQUIRED_COLUMNS = (
     "claim_strength",
     "upstream_commit_or_release",
     "metric_selection_policy",
+    "eval_split",
+    "split_parity",
 )
 VALID_REPRODUCTION_MODES = {
     "upstream_unchanged",
     "upstream_patched",
     "full_reimplementation",
+}
+VALID_SPLIT_PARITY = {
+    "same_train_same_eval",
+    "same_train_different_eval",
+    "different_train_different_eval",
 }
 
 
@@ -378,11 +385,22 @@ def validate_external_baselines_tsv(path: Path) -> list[str]:
                         f"reproduction of the published numbers. "
                         f"Label: EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED."
                     )
+            parity = row.get("split_parity", "").strip()
+            if parity and parity not in VALID_SPLIT_PARITY:
+                errors.append(
+                    f"{path.name} row {i}: invalid split_parity '{parity}'. "
+                    f"Must be one of {sorted(VALID_SPLIT_PARITY)}. "
+                    f"Label: EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED."
+                )
             for col in EXTERNAL_BASELINE_REQUIRED_COLUMNS:
                 if not row.get(col, "").strip():
+                    label = (
+                        "EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED"
+                        if col in {"eval_split", "split_parity"}
+                        else "REPRODUCTION_PROVENANCE_MISSING"
+                    )
                     errors.append(
-                        f"{path.name} row {i}: empty {col}. "
-                        f"Label: REPRODUCTION_PROVENANCE_MISSING."
+                        f"{path.name} row {i}: empty {col}. Label: {label}."
                     )
                     break
     return errors
