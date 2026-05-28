@@ -1,5 +1,21 @@
 # Changelog
 
+## Unreleased — Council self-critique step
+
+### Added
+
+- **New Council Process step 3, "Self-critique."** Between independent proposals (step 2) and steelmanning (step 4, renumbered from 3), each agent must articulate the single strongest argument against its own proposal and either revise the proposal to address it, or attach the unaddressed weakness as a `self_identified_weakness` field on the submission. The Monitor enforces the field. Proposals missing it, or containing boilerplate that could be copy-pasted onto any proposal, are rejected before they reach scoring. Inspired by the STaR / SCoRe family of self-training methods that exploit the recognition-better-than-generation asymmetry in LLMs, adapted to a decision-making context rather than a training context.
+- **New section `references/debate_council.md "Self-Critique Honest Limitations"`** documenting what self-critique catches and what it does not. Specifically: single-agent correlation (a model agreeing with itself), novel-mechanism blind spots (no recognition signal for unfamiliar ideas), boilerplate hazard (generic weaknesses that fail the Monitor's enforcement), and the per-closure cost (roughly 4 to 8 extra LLM calls on top of the existing 25 to 35). Self-critique complements but does not replace the Skeptic role or multi-vendor diversity.
+- **New label `COUNCIL_PROPOSAL_SELF_CRITIQUE_MISSING`** in `references/decision_labels.md`.
+
+### Changed
+
+- `references/debate_council.md` Council Process renumbered from 9 to 10 steps. The Documentation step now requires `debate_council_<id>.md` to include each proposal's `self_identified_weakness` field verbatim.
+
+### Motivating evidence
+
+The Skeptic role and multi-vendor diversity are good at catching weaknesses in *other* agents' proposals. They do less for the asymmetry between what a model generates and what the same model can recognize as flawed. Self-critique is the cheap intra-agent quality filter that catches obvious-bad-proposals before they cost the council four rounds of debate. It is explicitly not a substitute for the Skeptic or for multi-vendor councils; the three layers stack.
+
 ## Unreleased — Council multi-vendor option + README rewrites
 
 ### Added
