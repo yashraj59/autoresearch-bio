@@ -14,7 +14,7 @@
 
 ### Motivating evidence
 
-The Skeptic role and multi-vendor diversity are good at catching weaknesses in *other* agents' proposals. They do less for the asymmetry between what a model generates and what the same model can recognize as flawed. Self-critique is the cheap intra-agent quality filter that catches obvious-bad-proposals before they cost the council four rounds of debate. It is explicitly not a substitute for the Skeptic or for multi-vendor councils; the three layers stack.
+The Skeptic role and multi-vendor diversity are good at catching weaknesses in other agents' proposals. They do less for the asymmetry between what a model generates and what the same model can recognize as flawed. Self-critique is the cheap intra-agent quality filter that catches obvious-bad-proposals before they cost the council four rounds of debate. It is explicitly not a substitute for the Skeptic or for multi-vendor councils; the three layers stack.
 
 ## Unreleased — Council multi-vendor option + README rewrites
 
