@@ -113,13 +113,29 @@ Every closure trigger invokes this sequence:
 
 1. **Briefing.** Monitor compiles `final_report.md`, last 20 rows of `results.tsv`, last 20 entries of `research_journal.md`, original `autoresearch.md`, prior `## Session Amendments`, and prior `debate_council_*.md` files.
 2. **Independent proposals.** Each non-Monitor agent submits one to two proposals without cross-talk. Each proposal includes motivation tied to a specific observed failure, hypothesis, smallest mechanism, expected effect, identity-preservation check, lineage parents in the search DAG, and at least two citations or concrete prior references when literature is part of the justification.
-3. **Steelmanning round.** Each agent articulates the strongest version of one other agent's proposal before defending their own.
-4. **Open debate.** Up to four rounds, but stop as soon as no agent introduces a new argument in a round. Three rounds is a typical target, not a hard rule. Record verbatim or in faithful structured summary.
-5. **Scoring.** Each agent scores all proposals on the pre-registered rubric with per-dimension confidence.
-6. **Vote compilation.** Monitor compiles scores, identifies dissent, and calls vote.
-7. **Monitor review.** Monitor walks through `references/amendment_review_checklist.md` before announcing the vote result.
-8. **Decision rule.** See below. The thresholds are starting heuristics.
-9. **Documentation.** Write `debate_council_<id>.md` before resuming or escalating.
+3. **Self-critique.** Before each proposal moves to the steelmanning round, the same agent that wrote the proposal must articulate the single strongest counter-argument to its own proposal and either (a) revise the proposal to address that argument, or (b) attach the unaddressed weakness as a `self_identified_weakness` field on the submission. The Monitor enforces this. A proposal that arrives at the steelmanning round with an empty, missing, or boilerplate `self_identified_weakness` field is rejected with status `COUNCIL_PROPOSAL_SELF_CRITIQUE_MISSING`. See "Self-Critique Honest Limitations" below for what this step does and does not catch.
+4. **Steelmanning round.** Each agent articulates the strongest version of one other agent's proposal before defending their own.
+5. **Open debate.** Up to four rounds, but stop as soon as no agent introduces a new argument in a round. Three rounds is a typical target, not a hard rule. Record verbatim or in faithful structured summary.
+6. **Scoring.** Each agent scores all proposals on the pre-registered rubric with per-dimension confidence.
+7. **Vote compilation.** Monitor compiles scores, identifies dissent, and calls vote.
+8. **Monitor review.** Monitor walks through `references/amendment_review_checklist.md` before announcing the vote result.
+9. **Decision rule.** See below. The thresholds are starting heuristics.
+10. **Documentation.** Write `debate_council_<id>.md` before resuming or escalating, including each proposal's `self_identified_weakness` field verbatim.
+
+---
+
+## Self-Critique Honest Limitations
+
+Self-critique exploits a known asymmetry in LLMs: a model is often better at recognizing a bad output than at not generating one in the first place. So asking the same agent that wrote a proposal to articulate its strongest weakness is a cheap quality filter, and it forces every proposal to come with a stated weakness the Skeptic can build on rather than discover.
+
+It is not a replacement for the Skeptic role and not a replacement for multi-vendor diversity (see "Council Model Diversity"). Specifically:
+
+- **Single-agent correlation.** A Claude proposing X and the same Claude self-critiquing X is one model's distribution agreeing with itself about both the proposal and the weakness. The recognition-better-than-generation asymmetry is real but smaller than the asymmetry between different model providers.
+- **Novel-mechanism blind spots.** When a proposal involves a mechanism the model has not seen in training, the model has no recognition signal to draw on. Self-critique can produce confidently wrong "this proposal is fine" verdicts on novel ideas. The Skeptic role and multi-vendor diversity catch more of this.
+- **Boilerplate hazard.** Agents asked to self-critique can produce empty or generic weaknesses ("the proposal may have unforeseen side effects"). The Monitor must enforce that the `self_identified_weakness` field cites a concrete failure mode tied to the proposal's specific mechanism, not generic ML risks. A weakness that could be copy-pasted onto any proposal is boilerplate and must be rejected.
+- **Cost.** Adds roughly one extra LLM call per proposal. At four non-Monitor agents producing one to two proposals each, that is four to eight extra calls per closure, on top of the existing 25 to 35.
+
+A worked check: after the first three to five closures with self-critique enabled, audit whether the surviving proposals are noticeably different from a baseline without self-critique. If self-critique is rejecting many proposals as `COUNCIL_PROPOSAL_SELF_CRITIQUE_MISSING`, the cheap filter is doing real work. If almost every `self_identified_weakness` field is generic, the Monitor's boilerplate detection needs tightening or the step is not earning its compute.
 
 ---
 

@@ -221,6 +221,7 @@ EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED
 REFERENCE_NUMBER_HARDCODED_IN_REPORT
 SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR
 COUNCIL_MULTI_VENDOR_FALLBACK_USED
+COUNCIL_PROPOSAL_SELF_CRITIQUE_MISSING
 ```
 
 Semantics, briefly:
@@ -241,4 +242,5 @@ Semantics, briefly:
 - `EXTERNAL_BASELINE_REIMPLEMENTATION_MISLABELED` — a `full_reimplementation` row claims `upstream_unchanged` semantics, or a plot/PDF/blog renders the row without the required reimplementation label.
 - `EXTERNAL_BASELINE_SPLIT_PARITY_UNDOCUMENTED` — a row in `external_public_baselines.tsv` is missing `eval_split`, `split_parity`, or `split_manifest_sha256`, or `split_parity` has an invalid value. The comparison cannot be cited until parity is declared. `different_train_different_eval` is allowed but flags the row as ballpark-only and forbids its use as evidence in "the model beats X" claims (see `biology_addendum.md "External Baseline Split Parity"`).
 - `COUNCIL_MULTI_VENDOR_FALLBACK_USED` — a configured council role fell back to the primary vendor because the configured vendor's API key was missing at launch, or because the configured vendor timed out or errored mid-council. The closure report cites which roles fell back and the consensus is weighted accordingly (see `debate_council.md "Council Model Diversity"`).
+- `COUNCIL_PROPOSAL_SELF_CRITIQUE_MISSING` — a council proposal arrived at the steelmanning round with an empty, missing, or boilerplate `self_identified_weakness` field. The Monitor rejects the proposal and it does not enter scoring. Boilerplate means a weakness that could be copy-pasted onto any proposal without changes (generic "may have unforeseen side effects" rather than a concrete failure mode tied to the proposal's specific mechanism). See `debate_council.md "Self-Critique Honest Limitations"` for the limits of this check.
 - `SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR` — experiment cap reached with no candidate clearing the family-wise multiple-comparison floor (see `statistical_promotion.md`).
