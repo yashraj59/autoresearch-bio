@@ -1,5 +1,43 @@
 # Changelog
 
+## Unreleased — Autonomy gaps, council trace preservation, calibration audit cadence, literature fetch evidence, insight-brief reflection
+
+### Added
+
+- **`references/core_protocol.md` §15-§25** (the existing Closure and Next-Phase sections moved to §26-§27; §1-§14 unchanged):
+  - §15 non-experiment node cap (`SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED`).
+  - §16 closure-time fallback actions must execute (`CLOSURE_FALLBACK_READ_PENDING` / `_EXECUTED`).
+  - §17 screen calibration audit cadence (`METRIC_SCREEN_DEMOTED_BY_CALIBRATION_AUDIT`). Reads taken during search are `validation`-role reads counting toward the multiple-comparison floor; `locked_test` is read once at closure. This reconciles the audit with the existing §3.5 four-role split rather than inventing a parallel "locked read" concept.
+  - §18 attribution-control default for a new family's first experiment (`TIER1_DISCARD_UNATTRIBUTABLE` / `TIER1_KEEP_CONTROLLED_SIGNAL`). Declared the primary anti-noise check; in low-compute mode it replaces multi-seed Tier 2 replay, which becomes opt-in.
+  - §19 borderline retention and closure fallback (`TIER1_BORDERLINE`, `FAMILY_BORDERLINE_COOLDOWN`).
+  - §20 single-seed model-of-record disclosure (`SINGLE_SEED_MODEL_OF_RECORD_ACCEPTED`).
+  - §21 gate-metric alignment.
+  - §22 closure terminality / reopen authorization (`REOPEN_REQUIRES_EXPLICIT_USER_INSTRUCTION`).
+  - §23 quarter-budget reassessment gate.
+  - §24 literature cadence pre-launch check and fetch evidence (`LITERATURE_PASS_FETCH_EVIDENCE_MISSING`).
+  - §25 INSIGHT_BRIEF reflective audit (`INSIGHT_BRIEF_REFLECTION_MISSING`).
+  - Each section carries a Profile tag (lean and full, or full only) so the additions tier cleanly with the existing Low-Compute Mode instead of crushing small runs.
+- **`references/debate_council.md`**: Trace Preservation Requirement, Cross-Rebuttal Structural Requirement (`COUNCIL_TRACE_MISSING`, `COUNCIL_TRACE_SUMMARY_ONLY`, `COUNCIL_ROUND_ROBIN_PATTERN_DETECTED`), Council Decision Budget (`decision_budget_consumed`), and single-vendor disclosure on amendment-grade decisions (`COUNCIL_DIVERSITY_SINGLE_VENDOR`).
+- **`references/metric_calibration_audit.md`** and **`references/skill_anti_patterns.md`** (two new reference files).
+- **`assets/calibration_audit_template.md`**, **`assets/insight_brief_template.md`**, **`assets/reopen_authorization_template.md`** (three new templates). Expanded `assets/debate_council_template.md` to the trace structure.
+- **`references/decision_labels.md`**: 16 new labels with one-line semantics.
+- **`scripts/validate_autoresearch_artifacts.py`**: ten new checks. Advisory output is now partitioned from hard errors so "could not check" notes (missing journal node headers, no `--budget`, no council-trace dir) do not fail the run. The semantic council-trace checks are explicitly heuristic (surface markers, not proof of debate substance) per their docstrings. Journal-ordering checks read an optional machine-readable node header and degrade to advisory when absent.
+
+### Changed
+
+- `references/artifact_retention.md`: added `decision_budget_consumed` to the `summary.json` identity block; added `single_seed_model_of_record_acknowledged`; lowered the INSIGHT_BRIEF cadence threshold from N>=100 to N>=20; extended the INSIGHT_BRIEF schema with the reflective-audit fields.
+- `references/amendment_review_checklist.md`: added check 8 (closure-action enforceability); renamed to the Eight Checks.
+- `references/core_protocol.md §13`: literature discipline now enforced both at stall and pre-launch, with the four fetch-evidence fields required on every added paper.
+- `SKILL.md` Reference Loading Map: added rows for `metric_calibration_audit.md` and `skill_anti_patterns.md`.
+
+### Motivating evidence
+
+Surfaced by the RAM PoC autonomous run on the Arc Institute Virtual Cell Challenge: the loop spent too many consecutive support nodes before returning to experiments, anchored on a cheap screen metric whose correlation with the promotion metric was never audited, skipped the insight-brief and literature cadences that the skill already mandated, and under-documented council decisions. The fixes generalize the lessons (the cell-eval and VCC specifics stay out of the skill): a non-experiment node cap, a screen-vs-promotion calibration audit, a quarter-budget reassessment, literature fetch evidence, reflective briefs, and council trace preservation. The §18 attribution control is the cheap rigor check that replaces multi-seed replay when compute is tight, and §17/§3.5 keep the repeated-confirmation-read pattern honest by counting every `validation` read toward the multiple-comparison floor and reserving `locked_test` for a single closure read.
+
+### Deferred to a later PR
+
+Parts 8-9 of the upgrade spec (a `quickstart/`, a second non-bio worked demo, project-type overlays, and an `engineering_runbook.md`) are additive onboarding material and are not included here. The existing `autoresearch_demo/` predates the PR #1-5 file requirements and already fails the validator; regenerating it to be validator-clean is part of that deferred onboarding work.
+
 ## Unreleased — Council self-critique step
 
 ### Added

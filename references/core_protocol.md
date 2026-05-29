@@ -480,6 +480,8 @@ Amendments override outdated allocation rules. For example, if a family has repe
 
 The MoFNet POC showed that "search the literature" written as prose is not enough. The agent had a starter file listing three directly-relevant 2025 SOTA papers (HyperCLSA, CMGL, MOGOLA) whose published mechanism (cross-omic attention) the agent then re-invented from scratch across 123 experiments, leaving `papers_consulted.md` byte-identical to its starter. This section makes literature search a structural part of the loop instead of a prose intention.
 
+This section is enforced at two points: at stall (the `LITERATURE_PASS_REQUIRED_BY_STALL` triggers below) and before every launch (the pre-launch cadence check and per-paper fetch-evidence requirement in §24). Every paper added in any pass must carry the four fetch-evidence fields defined in §24, or it does not count as a literature pass.
+
 ### Canonical Search Surfaces
 
 The agent must search **at least three** of the following surfaces per literature pass, picked from the relevant domain. Naming them explicitly prevents drift to whatever the agent happens to remember from its training data.
@@ -608,9 +610,146 @@ Auto-generated `## User Amendment:` blocks pasted into `research_journal.md` by 
 
 ---
 
-## 15. Closure And Final Report
+## 15. Non-Experiment Node Cap
 
-When stop conditions fire, write `final_report.md` with:
+Profile: lean and full.
+
+The loop may not record more than three consecutive non-experiment nodes (any node that does not register a row in `results.tsv`) without either launching an experiment or emitting `COUNCIL_ESCALATE_TO_USER` with a one-line explanation of which experiment is being deferred. Metric investigations, audits, amendments, literature passes, support-only nodes, and council-deliberation-only nodes all count. After a supervised resume instruction, the next real action must be an experiment, not another support node.
+
+Examples of the same failure across domains:
+
+- Image classification: building data-augmentation pipelines, evaluation harnesses, and checkpoint-comparison scripts in sequence without launching the next training run.
+- Retrieval and search: scaffolding query-set generators, NDCG calculators, and slice-level reporting before running the next reranker variant.
+- Single-cell perturbation: writing preflight guards, runner wrappers, and closure-procedure runners without launching the next Tier 1 candidate.
+
+The support work is individually valid. The failure is accumulation without intervening experiments. Detected by `validate_non_experiment_node_cap()`; the label is `SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED`.
+
+---
+
+## 16. Closure-Time Fallback Actions Must Execute
+
+Profile: lean and full (conditional on an amendment specifying a closure action).
+
+If any amendment active at closure specifies a closure-time action (a locked read, a final inference, a confirmation experiment, a registration step), that action becomes the first step of the closure procedure (§26) and must execute before `final_report.md` is written. The closure procedure must enumerate pending closure-bound actions from the active-amendments table before proceeding to closure plots. A closure that writes `final_report.md` with an unresolved `CLOSURE_FALLBACK_READ_PENDING` row is a defect; `validate_closure_fallback_actions()` catches this. The paired label `CLOSURE_FALLBACK_READ_EXECUTED` records that the action ran.
+
+---
+
+## 17. Screen Calibration Audit Cadence
+
+Profile: lean and full.
+
+When a run has accumulated at least ten registered candidates with paired screen scores and model-of-record-metric scores, and at every quarter-budget audit thereafter (§23), the loop computes Pearson and Spearman correlations between them using the procedure in `references/metric_calibration_audit.md`. The audit reuses existing `validation`-role reads where available. Additional historical-checkpoint reads require explicit user authorization, with prediction artifacts deleted after metric extraction.
+
+Read-surface reminder (consistent with §3.5): confirmation reads taken during search are `validation`-role reads. They are a repeatable selection surface, and every such read counts toward the multiple-comparison floor N in `statistical_promotion.md`, so trust in the screen-vs-promotion comparison decays as reads accumulate. The `locked_test` role is read once at closure and is never the surface a mid-search calibration audit reuses.
+
+If Pearson r >= 0.75 or Spearman rho >= 0.75 on n >= 10, the screen is `CALIBRATED_KEEP`. If both fall in [0.6, 0.75), the screen is `CALIBRATED_DEGRADED_MONITOR`. If either falls below 0.6, the screen is `METRIC_SCREEN_DEMOTED_BY_CALIBRATION_AUDIT`: the controlled-margin gate is suspended pending a supervised amendment registering a calibration-aware replacement screen.
+
+The failure mode this prevents is using an internally valid screen (non-leaking, well-defined) to rank candidates for expensive confirmation reads when the screen's rank-ordering correlation with the promotion metric is weak. Examples:
+
+- Image classification: dev-split accuracy as a screen for a rare-class-weighted test metric, when dev accuracy is dominated by easy classes and ranks candidates differently.
+- Retrieval: NDCG@10 on head-skewed dev queries as a screen for tail-dependent live click-through.
+- Single-cell perturbation: a target-heldout local distributional metric as a screen for the deliverable's official scoring.
+
+---
+
+## 18. Attribution-Control Default For A New Family's First Experiment
+
+Profile: full requires it for every new family's first experiment; lean requires it before a family's first keep is promoted.
+
+The first experiment of any newly opened family is paired with a no-mechanism control run using the same seed, manifest, and recipe with the new mechanism disabled. The two runs share a parent node label and register as an attribution pair. A `TIER1_KEEP_CONTROLLED_SIGNAL` decision for the new mechanism requires that the mechanism arm beats the control arm by the controlled-margin threshold on the gating metric. Clearing the static floor alone yields `TIER1_DISCARD_UNATTRIBUTABLE`, regardless of absolute score.
+
+This attribution control is the primary anti-noise check and, in low-compute mode, replaces multi-seed Tier 2 replay as the default. Multi-seed replay answers "is the lift stable across random inits"; the no-mechanism control answers "is the lift from the mechanism or would the recipe without it do as well." The control is the cheaper of the two: one extra run per family rather than k extra runs per keep. Full-profile runs may use both; lean-profile runs use the control and treat multi-seed replay as opt-in. The paired control costs one extra experiment per family. Across six to ten families the overhead is 3 to 5 percent of a 200-experiment budget, and it catches the most expensive autonomy failure: deepening a no-op mechanism to multi-seed.
+
+---
+
+## 19. Borderline Retention And Closure Fallback
+
+Profile: lean and full.
+
+A candidate that clears the static floor but misses the controlled-margin gate over its parent screen is labeled `TIER1_BORDERLINE`. Its checkpoint and screen diagnostics are retained, not deleted. It remains ineligible for a `validation`-role confirmation read during search. At closure, if no candidate beat the model of record during the run, the strongest borderline by screen score is eligible for one `validation` confirmation read as a closure fallback under §16; if it then beats the model of record it may become the model of record before the single `locked_test` read. Tie-break: protected-metric stability (no regression preferred), then lineage recency.
+
+When three or more borderlines accumulate within one family without any clearing the controlled margin, the family enters `FAMILY_BORDERLINE_COOLDOWN`. This is distinct from `FAMILY_COOLDOWN`: the signal is a metric ceiling or architecture limit, not an absent mechanism. Reopening the family requires a literature pass.
+
+---
+
+## 20. Single-Seed Model-Of-Record Disclosure
+
+Profile: lean and full.
+
+When `final_report.md` is written and the model of record was promoted from a single-seed confirmation read, the Score Summary section must flag this as a known limitation. The closing procedure may optionally run one additional non-original-seed replay of the model-of-record recipe as a stability check, or record an explicit `SINGLE_SEED_MODEL_OF_RECORD_ACCEPTED` decision attributable to a supervised instruction. Default is to flag, not run. This is a seed-confirmation disclosure; it is separate from the selection-tuning disclosure that applies whenever the `validation` surface was read many times (see §17 and `statistical_promotion.md`).
+
+---
+
+## 21. Gate-Metric Alignment
+
+Profile: lean and full.
+
+Any gate that pauses search, halts experiments, or blocks next-experiment selection must be defined on the same metric used for model-of-record promotion. Gates on secondary or proxy metrics may downgrade trust in those metrics (for example demoting a screen to floor-only per §17) but may not pause the search itself.
+
+The failure mode is a pause-grade gate on a metric different from the promotion metric, which creates the situation where the primary metric appears in the protocol header while a secondary metric controls execution flow. The loop halts for the wrong reason while the real metric continues to drift.
+
+---
+
+## 22. Closure Terminality (Extension Of §14)
+
+Profile: lean and full.
+
+`SEARCH_CLOSED_NO_NEW_BASELINE` is terminal absent an explicit reopen verb ("reopen", "resume", "restart", "keep running", "continue the search", or an unambiguous equivalent) in the immediately preceding user message. Restated goal context, council debates about further mechanisms, deep-research artifacts produced after closure, observations that an official stop threshold was not reached, or "active goal context reasserted" are not reopen instructions. A `SEARCH_AMEND` node parented to `SEARCH_CLOSED_NO_NEW_BASELINE` without a `REOPEN_AUTHORIZATION_RECORD.md` artifact that quotes the user's instruction is labeled `REOPEN_REQUIRES_EXPLICIT_USER_INSTRUCTION` and refused.
+
+---
+
+## 23. Quarter-Budget Reassessment Gate
+
+Profile: lean and full.
+
+At every 25 percent of the experiment budget (50, 100, 150 experiments for a 200-cap run), the loop pauses experiment selection and runs the reassessment procedure:
+
+1. Read the full `research_journal.md` and `results.tsv`.
+2. Regenerate summaries.
+3. Run the §17 calibration audit.
+4. Ask: is the current gate actually predictive of the protected objective?
+5. If the audit identifies that the gating screen has weakened, recent experiments cluster around a local optimum, or evidence for the current direction is thin or contradictory, run a bounded diagnostic study (a metric-correlation sweep, a no-mechanism replay of a recent candidate, a multi-seed stability check on the model of record, or an isolated metric investigation) before selecting the next experiment. Bound the diagnostic to no more than 3 percent of the remaining budget.
+6. Write an `AUDITNN` node with the calibration verdict, the diagnostic findings if any, and a concrete next-phase decision.
+7. Only then select the next experiment.
+
+If the audit fires and the loop selects a next experiment without writing the `AUDITNN` node or running the bounded diagnostic when triggered, `validate_quarter_budget_audit()` flags the run.
+
+---
+
+## 24. Literature Cadence Pre-Launch Check And Fetch Evidence
+
+Profile: lean and full. Extends §13.
+
+Before launching any new experiment, the loop checks the timestamp on `papers_consulted.md`. If between five and ten experiments have elapsed since the last literature pass, or if the previous five experiments cluster in one family, the loop must run a literature pass before selecting the next mechanism. The pass touches at least two distinct surfaces per §13.
+
+Every paper added in a pass must record machine-checkable fetch evidence:
+
+- `fetch_url` — the URL the paper was retrieved from.
+- `fetch_timestamp` — UTC timestamp of retrieval.
+- `fetch_surface` — which surface from §13 the URL came from (arXiv, bioRxiv, PubMed, Semantic Scholar, etc.).
+- `extraction_snippet` — a 50 to 200 word direct extract from the paper showing the mechanism, finding, or claim being cited. Not a summary written by the agent; an extract from the source.
+
+Papers added without all four fields are flagged `LITERATURE_PASS_FETCH_EVIDENCE_MISSING` and do not count as a literature pass for cadence purposes. This prevents the failure mode where the agent writes paper titles into `papers_consulted.md` without actually retrieving anything.
+
+---
+
+## 25. INSIGHT_BRIEF Reflective Audit
+
+Profile: lean and full.
+
+Every tenth experiment, the loop writes `outputs/insights/INSIGHT_BRIEF_NNN.md` per the cadence in `references/artifact_retention.md`. The brief contains the previously specified fields (experiment-num range, family-allocation snapshot, what was learned, what is not being pursued, next 5 planned experiments) plus a reflective audit of the previous brief:
+
+- Each of the previous brief's "next 5 planned experiments" entries is rated `executed_as_planned`, `executed_with_deviation`, or `not_executed`.
+- For each executed entry: was the predicted outcome correct?
+- For each prediction that was wrong: what about the prior model of the search space was incorrect, and how does that change the next 5 planned experiments?
+
+Briefs without the reflective-audit section are flagged `INSIGHT_BRIEF_REFLECTION_MISSING`. The first brief (`INSIGHT_BRIEF_001.md`) has no prior brief to audit and is exempt. The failure mode this prevents is briefs becoming a planning document rather than a learning document.
+
+---
+
+## 26. Closure And Final Report
+
+When stop conditions fire, first execute any pending closure-time actions enumerated under §16, then write `final_report.md` with:
 
 1. closure trigger;
 2. model/system of record at closure;
@@ -627,7 +766,7 @@ Closure is not failure. It is evidence that the current search space is exhauste
 
 ---
 
-## 16. Common Next-Phase Decisions
+## 27. Common Next-Phase Decisions
 
 When architecture search closes without a new baseline, the next phase is usually one of:
 

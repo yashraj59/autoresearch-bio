@@ -239,6 +239,8 @@ Read only what is needed for the artifact:
 | Decision vocabulary | `references/decision_labels.md` |
 | Documentation, retention, file-system discipline | `references/artifact_retention.md` |
 | DAG / lineage rules | `references/lineage.md` |
+| Screen-vs-promotion-metric calibration | `references/metric_calibration_audit.md` |
+| Failure-mode digest (read before a long autonomous run) | `references/skill_anti_patterns.md` |
 | Paste-ready templates | `assets/*.md` |
 | Skill quality checks | `evals/process_checklist.md`, `evals/trigger_prompts.csv` |
 

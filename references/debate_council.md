@@ -105,6 +105,10 @@ If a configured vendor's API key is missing at launch, the orchestrator falls ba
 
 Multi-vendor councils break some correlation but not all of it. Vendors share large overlapping training corpora (Common Crawl, public benchmarks, academic papers). Three different model providers trained on similar web data are not three independent observers. They are three models that will still agree about most established methodology and most published mechanism classes. The diversity is real but bounded. Treat consensus across vendors as stronger evidence than consensus within one vendor, but not as a measurement.
 
+### Single-vendor disclosure on amendment-grade decisions
+
+For amendment-grade decisions (amendment adoption, model-of-record rebase, gate change), a single-vendor council is logged as `COUNCIL_DIVERSITY_SINGLE_VENDOR` and `final_report.md` must include a limitation paragraph naming it. The paragraph states that all council roles ran on one model, that their confidence is correlated, and that consensus on these decisions is not independent evidence. The multi-vendor recommendation itself is unchanged; this is disclosure, not a requirement to use multiple vendors.
+
 ---
 
 ## Council Process
@@ -121,6 +125,40 @@ Every closure trigger invokes this sequence:
 8. **Monitor review.** Monitor walks through `references/amendment_review_checklist.md` before announcing the vote result.
 9. **Decision rule.** See below. The thresholds are starting heuristics.
 10. **Documentation.** Write `debate_council_<id>.md` before resuming or escalating, including each proposal's `self_identified_weakness` field verbatim.
+
+---
+
+## Trace Preservation Requirement
+
+Profile: full only. In lean profile, a one-paragraph decision rationale in `research_journal.md` substitutes for a full trace file.
+
+For any decision invoking five or more council calls (proposals, debate rounds, scoring rounds), a separate `outputs/council_traces/debate_council_<node_id>.md` artifact is mandatory. Contents in order:
+
+1. Each role's full position statement (not summarized).
+2. Each role's `self_identified_weakness` field.
+3. Each role's steelman of the strongest opposing argument.
+4. Each debate round in full.
+5. Score and vote breakdown with per-role rationale.
+6. The dispositive argument the Monitor cited.
+7. Vendor diversity field (`council_diversity: single_vendor` or the per-role vendor list).
+
+The corresponding `research_journal.md` entry references the trace file by path and includes only the decision and the one-sentence dispositive argument.
+
+Required for: amendment adoption, family attribution decisions (Tier 1 keep, Tier 2 promote, family cooldown, family retire), metric-investigation conclusions, gate changes, and model-of-record rebases. Minimum word count per role section is 100; below that the trace is `COUNCIL_TRACE_SUMMARY_ONLY`. A missing trace for a major decision is `COUNCIL_TRACE_MISSING`.
+
+## Cross-Rebuttal Structural Requirement
+
+Profile: full only.
+
+Each trace must satisfy: the skeptic's position engages the builder's specific claim being challenged; the methodologist's call explicitly references the strongest skeptic argument (not just "weighed concerns"); when a self-identified weakness is non-trivial, the methodologist's call addresses it or notes why it was outweighed. A trace failing this is `COUNCIL_ROUND_ROBIN_PATTERN_DETECTED`.
+
+The validator check for this is a heuristic (it looks for the builder's key terms inside the skeptic section and the skeptic role name inside the methodologist section). It cannot verify genuine engagement, only its surface markers. Treat a flag as a prompt for human review, not a proof, and treat a pass as "no obvious round-robin," not "the debate was substantive." Start with the engagement requirement; tighten to a verbatim-quote rule only if ritualized engagement emerges.
+
+## Council Decision Budget
+
+Profile: lean and full.
+
+Add `decision_budget_consumed` to the per-experiment `summary.json` identity block: a running count of council calls spent at and before this experiment. The §23 quarter-budget reassessment extends to check council-call burn rate. A run burning council calls fast on decisions that conclude `TIER1_DISCARD_NO_SIGNAL` signals that decisions are not paying for themselves, and the reassessment should propose a smaller council size or fewer decision points per experiment.
 
 ---
 

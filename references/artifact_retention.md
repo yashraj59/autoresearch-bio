@@ -100,8 +100,9 @@ Every per-experiment `summary.json` (or equivalent run-record file under `output
     "split_construction_seed": 42,
     "created_utc": "<ISO 8601 UTC timestamp>",
     "parent_experiment_ids": ["<EXPNNN>"],
-    "branch_type": "<root|linear|fork|combine|replay>",
-    "leakage_guard": "<PASS_NO_TEST_SELECTION | WARN_TEST_READ_FOR_DIAGNOSTICS_ONLY | FAIL_TEST_IN_SELECTION>"
+    "branch_type": "<root|linear|fork|grid_sweep|combine|replay>",
+    "leakage_guard": "<PASS_NO_TEST_SELECTION | WARN_TEST_READ_FOR_DIAGNOSTICS_ONLY | FAIL_TEST_IN_SELECTION>",
+    "decision_budget_consumed": "<running count of council calls spent at and before this experiment>"
   },
   "config": { /* hyperparameters and run flags as before */ },
   "metrics": { /* per-seed and aggregated metrics */ }
@@ -109,6 +110,8 @@ Every per-experiment `summary.json` (or equivalent run-record file under `output
 ```
 
 The closure check in `final_report.md` must list any experiment whose `summary.json` lacks a complete `identity` block. Such experiments are tagged `IDENTITY_BLOCK_INCOMPLETE` and excluded from promotion evidence.
+
+The closing run's final summary additionally carries `single_seed_model_of_record_acknowledged: <bool>` (see `core_protocol.md §20`). It is `true` only when the model of record rests on a single-seed confirmation read and the disclosure has been written into `final_report.md`.
 
 ---
 
@@ -118,7 +121,7 @@ A new agent session reading the run state must be able to act in under 5 minutes
 
 1. **Handoff documents (`CODEX_HANDOFF.md`, `HANDOFF.md`, or equivalent) are state, not history.** Hard cap ~8 KB. Replace stale sections, do not append. Per-experiment chronology lives in `research_journal.md`; cite the latest journal anchor.
 2. **`STATE_OF_PLAY.md` is mandatory.** A next-action-only file (≤2 KB) regenerated after every experiment. Required contents: current model of record, last completed experiment ID and outcome, next single proposed action, blockers, open `LITERATURE_PASS_REQUIRED_BY_STALL` flags.
-3. **`insights/INSIGHT_BRIEF_NNN.md` every 10 experiments.** ≤1 KB each. A loop with ≥100 experiments and an empty `insights/` directory fails the resumability check and must pause until at least the most recent two briefs are written.
+3. **`insights/INSIGHT_BRIEF_NNN.md` every 10 experiments.** ≤1 KB each. A loop with ≥20 experiments and a missing-brief gap fails the resumability check and must pause until the most recent briefs are written. (Threshold lowered from 100 to 20: the first VCC run reached the 20s with no briefs at all, so the old 100 threshold never fired in time to matter.)
 
 "Files To Read First" lists in any handoff document must contain at most five entries, with `STATE_OF_PLAY.md` as the fifth.
 
@@ -133,6 +136,12 @@ Each brief is the cognitive checkpoint that prevents an autoresearch loop from d
 - **What we learned since the prior brief:** one paragraph. New mechanisms that worked, new failure modes observed, new metric understanding.
 - **What mechanism class we are not pursuing further:** one paragraph. Families retired, ideas escalated to `identity_violations_considered.md`, dead-end mechanisms.
 - **Next 5 planned experiment IDs with rationale:** one line each. If the rationale references a paper, link to the entry in `papers_consulted.md`.
+- **Reflective audit of the previous brief (required from the second brief onward, see `core_protocol.md §25`):**
+  - Rate each of the previous brief's "next 5 planned experiments" as `executed_as_planned`, `executed_with_deviation`, or `not_executed`.
+  - For each executed entry, state whether the predicted outcome was correct.
+  - For each wrong prediction, state what about the prior model of the search space was incorrect and how that changes this brief's next 5.
+
+  `INSIGHT_BRIEF_001.md` is exempt (no prior brief). Briefs from `002` onward without the reflective-audit section are flagged `INSIGHT_BRIEF_REFLECTION_MISSING`.
 
 Closure (`final_report.md`) must list every missing INSIGHT_BRIEF gap (e.g. "EXP030–EXP049 had no brief written"). Loops that close with brief gaps cannot promote a Tier 3 winner without an amendment explaining the cognitive-checkpoint lapse.
 

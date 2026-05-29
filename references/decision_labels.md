@@ -244,3 +244,42 @@ Semantics, briefly:
 - `COUNCIL_MULTI_VENDOR_FALLBACK_USED` — a configured council role fell back to the primary vendor because the configured vendor's API key was missing at launch, or because the configured vendor timed out or errored mid-council. The closure report cites which roles fell back and the consensus is weighted accordingly (see `debate_council.md "Council Model Diversity"`).
 - `COUNCIL_PROPOSAL_SELF_CRITIQUE_MISSING` — a council proposal arrived at the steelmanning round with an empty, missing, or boilerplate `self_identified_weakness` field. The Monitor rejects the proposal and it does not enter scoring. Boilerplate means a weakness that could be copy-pasted onto any proposal without changes (generic "may have unforeseen side effects" rather than a concrete failure mode tied to the proposal's specific mechanism). See `debate_council.md "Self-Critique Honest Limitations"` for the limits of this check.
 - `SEARCH_CLOSED_NO_NEW_BASELINE_MCC_FLOOR` — experiment cap reached with no candidate clearing the family-wise multiple-comparison floor (see `statistical_promotion.md`).
+
+## Autonomy, Calibration, Council-Trace, And Cadence Labels
+
+```text
+SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED
+REOPEN_REQUIRES_EXPLICIT_USER_INSTRUCTION
+CLOSURE_FALLBACK_READ_PENDING
+CLOSURE_FALLBACK_READ_EXECUTED
+METRIC_SCREEN_DEMOTED_BY_CALIBRATION_AUDIT
+TIER1_BORDERLINE
+TIER1_DISCARD_UNATTRIBUTABLE
+TIER1_KEEP_CONTROLLED_SIGNAL
+FAMILY_BORDERLINE_COOLDOWN
+SINGLE_SEED_MODEL_OF_RECORD_ACCEPTED
+COUNCIL_TRACE_MISSING
+COUNCIL_TRACE_SUMMARY_ONLY
+COUNCIL_ROUND_ROBIN_PATTERN_DETECTED
+COUNCIL_DIVERSITY_SINGLE_VENDOR
+LITERATURE_PASS_FETCH_EVIDENCE_MISSING
+INSIGHT_BRIEF_REFLECTION_MISSING
+```
+
+Semantics, briefly:
+
+- `SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED` — more than three consecutive nodes registered without producing a `results.tsv` row (see `core_protocol.md §15`).
+- `REOPEN_REQUIRES_EXPLICIT_USER_INSTRUCTION` — terminal for any amendment authored after `SEARCH_CLOSED_NO_NEW_BASELINE` without an explicit reopen verb in the preceding user instruction (see `core_protocol.md §22`).
+- `CLOSURE_FALLBACK_READ_PENDING` / `CLOSURE_FALLBACK_READ_EXECUTED` — paired labels for amendment-bound closure-time actions. `final_report.md` may not be written while `PENDING` is unresolved (see `core_protocol.md §16`).
+- `METRIC_SCREEN_DEMOTED_BY_CALIBRATION_AUDIT` — screen-vs-promotion-metric correlation fell below threshold. Demotes the screen to floor-only (see `core_protocol.md §17` and `metric_calibration_audit.md`).
+- `TIER1_BORDERLINE` — candidate cleared the static floor but missed the controlled-margin gate. Checkpoint and screen diagnostics retained; eligible for one closure fallback read (see `core_protocol.md §19`).
+- `TIER1_DISCARD_UNATTRIBUTABLE` — first experiment of a new family registered without a paired no-mechanism control run (see `core_protocol.md §18`).
+- `TIER1_KEEP_CONTROLLED_SIGNAL` — the mechanism arm beat its paired no-mechanism control by the controlled-margin threshold (see `core_protocol.md §18`).
+- `FAMILY_BORDERLINE_COOLDOWN` — three or more `TIER1_BORDERLINE` candidates in one family without any clearing the controlled margin. Distinct from `FAMILY_COOLDOWN`. Reopening requires a literature pass.
+- `SINGLE_SEED_MODEL_OF_RECORD_ACCEPTED` — supervised acknowledgment that the model of record rests on a single-seed confirmation read. Required in `final_report.md` if the model of record is not seed-confirmed (see `core_protocol.md §20`).
+- `COUNCIL_TRACE_MISSING` — a major decision recorded without an accompanying `outputs/council_traces/debate_council_<node_id>.md` trace file (see `debate_council.md "Trace Preservation Requirement"`).
+- `COUNCIL_TRACE_SUMMARY_ONLY` — trace file shorter than the per-role minimum or lacking required cross-rebuttal fields.
+- `COUNCIL_ROUND_ROBIN_PATTERN_DETECTED` — trace exists but the skeptic does not engage the builder's specific claim, or the methodologist's decision does not address the skeptic's strongest objection. Detected by a heuristic check; treat a flag as a prompt for human review, not a proof.
+- `COUNCIL_DIVERSITY_SINGLE_VENDOR` — informational. Logged on amendment-grade decisions when all council roles ran on a single vendor. Triggers a required limitation paragraph in `final_report.md`.
+- `LITERATURE_PASS_FETCH_EVIDENCE_MISSING` — papers added to `papers_consulted.md` without per-paper `fetch_url`, `fetch_timestamp`, `fetch_surface`, or `extraction_snippet` (see `core_protocol.md §24`).
+- `INSIGHT_BRIEF_REFLECTION_MISSING` — a brief was written but does not audit the previous brief's predictions against actual results (see `core_protocol.md §25`).
