@@ -434,15 +434,12 @@ def validate_external_baselines_tsv(path: Path) -> list[str]:
 
 # --- Autonomy / calibration / council / cadence checks (skill upgrade) -----
 #
-# Honesty note: several of these parse research_journal.md, which is free text.
-# To make them reliable, the protocol asks journal node entries to carry a
-# machine-readable header line of the form:
+# core_protocol.md §15 mandates that every research_journal.md node entry
+# carries a machine-readable header line of the form:
 #     <!-- node: id=NNN type=experiment|audit|amendment|literature|support|council experiment=true|false -->
-# Where that header is absent, the journal-ordering checks degrade to a single
-# advisory note rather than a hard flag, so they never false-positive on a
-# run that simply uses a different journal format. The structured-file checks
-# (results.tsv columns, papers_consulted fields, insight-brief sections,
-# council trace files) do not depend on the journal format.
+# The node-cap and quarter-budget checks rely on this. Because the header is
+# mandatory, a journal that has experiments in results.tsv but no node headers
+# is itself a hard failure (the run is not following §15), not an advisory.
 
 NODE_HEADER_RE = re.compile(
     r"<!--\s*node:\s*(?P<kv>[^>]*?)-->", re.IGNORECASE
@@ -451,8 +448,7 @@ NODE_HEADER_RE = re.compile(
 
 def _parse_journal_nodes(run_dir: Path) -> list[dict] | None:
     """Return an ordered list of {id,type,experiment} dicts parsed from
-    research_journal.md node headers, or None if the journal has no headers
-    (in which case ordering checks become advisory)."""
+    research_journal.md node headers, or None if the journal has no headers."""
     path = run_dir / "research_journal.md"
     if not path.exists():
         return None
@@ -472,16 +468,23 @@ def _parse_journal_nodes(run_dir: Path) -> list[dict] | None:
     return nodes or None
 
 
-def validate_non_experiment_node_cap(run_dir: Path) -> list[str]:
-    """Flag any run of more than three consecutive non-experiment nodes.
-    Advisory-only if the journal has no machine-readable node headers."""
+def validate_non_experiment_node_cap(run_dir: Path, experiment_count: int) -> list[str]:
+    """Hard check (§15): node headers are mandatory, and no more than three
+    consecutive non-experiment nodes may occur."""
     nodes = _parse_journal_nodes(run_dir)
     if nodes is None:
-        return [
-            "ADVISORY: research_journal.md has no machine-readable node headers "
-            "(<!-- node: ... -->), so the non-experiment node cap (§15) could not "
-            "be checked automatically. Add node headers to enable this check."
-        ]
+        # Headers are mandatory under §15. A journal with experiments but no
+        # headers is a hard failure, not an advisory. A run that has not yet
+        # registered any experiment is exempt (nothing to header).
+        if experiment_count > 0:
+            return [
+                "research_journal.md has no machine-readable node headers "
+                "(<!-- node: id=... type=... experiment=true|false -->), which "
+                "core_protocol.md §15 makes mandatory. The non-experiment node "
+                "cap cannot be enforced without them. Label: "
+                "SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED (§15)."
+            ]
+        return []
     errors: list[str] = []
     streak = 0
     streak_ids: list[str] = []
@@ -565,8 +568,13 @@ def validate_attribution_pairs(run_dir: Path, rows: list[dict]) -> list[str]:
 
 
 def validate_council_traces(run_dir: Path) -> list[str]:
-    """Heuristic council-trace checks. Cannot verify debate substance; only
-    surface markers. A flag is a prompt for human review, not a proof."""
+    """Council-trace checks. The summary-only and round-robin checks are hard
+    failures (per supervised decision). Their detection is heuristic: the
+    validator checks surface markers (word count, whether the methodologist
+    section names the skeptic), not the substance of the debate. A trace can
+    pass the heuristic and still be shallow; passing means "no obvious
+    round-robin," not "the debate was substantive." The missing-directory
+    case stays advisory because not every run convenes a council."""
     traces_dir = run_dir / "council_traces"
     if not traces_dir.exists():
         return [
@@ -577,23 +585,26 @@ def validate_council_traces(run_dir: Path) -> list[str]:
     errors: list[str] = []
     for trace in sorted(traces_dir.glob("debate_council_*.md")):
         text = trace.read_text(encoding="utf-8", errors="replace")
-        # Per-role minimum: very rough word-count proxy.
+        # Per-role minimum proxy: five role-ish sections at 100 words each is
+        # ~500 words; we use a conservative 300-word floor for the whole trace.
         if len(text.split()) < 300:
             errors.append(
                 f"{trace.name}: trace is short ({len(text.split())} words); per-role "
-                f"sections may be below the 100-word minimum. Label: "
+                f"sections are likely below the 100-word minimum. Label: "
                 f"COUNCIL_TRACE_SUMMARY_ONLY."
             )
         low = text.lower()
-        # Round-robin heuristic: skeptic and methodologist sections should each
-        # appear and the methodologist section should mention the skeptic.
+        # Round-robin heuristic (hard): the methodologist section must name the
+        # skeptic. If this is a false positive, the trace must still name the
+        # skeptic's argument to pass, which is the behavior the gate wants.
         if "skeptic" in low and "methodologist" in low:
             meth_idx = low.find("methodologist")
             if "skeptic" not in low[meth_idx:]:
                 errors.append(
-                    f"{trace.name}: methodologist section does not appear to "
-                    f"reference the skeptic. Heuristic flag, review manually. "
-                    f"Label: COUNCIL_ROUND_ROBIN_PATTERN_DETECTED."
+                    f"{trace.name}: methodologist section does not name the "
+                    f"skeptic (heuristic). The methodologist's call must address "
+                    f"the strongest skeptic argument. Label: "
+                    f"COUNCIL_ROUND_ROBIN_PATTERN_DETECTED."
                 )
     return errors
 
@@ -645,16 +656,15 @@ def validate_quarter_budget_audit(run_dir: Path, rows: list[dict],
             "--budget N to enable."
         ]
     n = len(rows)
-    audit_count = 0
-    journal = run_dir / "research_journal.md"
-    if journal.exists():
-        audit_count = journal.read_text(encoding="utf-8", errors="replace").upper().count("AUDIT")
+    # Count audit nodes from the mandatory §15 node headers (type=audit).
+    nodes = _parse_journal_nodes(run_dir) or []
+    audit_count = sum(1 for nd in nodes if nd["type"] == "audit")
     expected_audits = sum(1 for q in (0.25, 0.5, 0.75) if n >= int(budget * q))
     if expected_audits > 0 and audit_count < expected_audits:
         return [
             f"Run has reached {n}/{budget} experiments; expected at least "
-            f"{expected_audits} quarter-budget AUDIT node(s) (§23) but found "
-            f"~{audit_count} AUDIT mention(s) in research_journal.md."
+            f"{expected_audits} quarter-budget audit node(s) (type=audit, §23) but "
+            f"found {audit_count} in research_journal.md node headers."
         ]
     return []
 
@@ -816,7 +826,7 @@ def main(argv: list[str]) -> int:
     )
 
     # Skill-upgrade checks (autonomy gaps, calibration, council, cadence).
-    errors.extend(validate_non_experiment_node_cap(run_dir))
+    errors.extend(validate_non_experiment_node_cap(run_dir, experiment_count))
     errors.extend(validate_closure_fallback_actions(run_dir))
     errors.extend(validate_attribution_pairs(run_dir, rows))
     errors.extend(validate_council_traces(run_dir))

@@ -268,7 +268,7 @@ INSIGHT_BRIEF_REFLECTION_MISSING
 
 Semantics, briefly:
 
-- `SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED` — more than three consecutive nodes registered without producing a `results.tsv` row (see `core_protocol.md §15`).
+- `SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED` — more than three consecutive non-experiment nodes, or a journal with registered experiments but no mandatory `<!-- node: ... -->` headers (the cap cannot be checked without them). Hard failure (see `core_protocol.md §15`).
 - `REOPEN_REQUIRES_EXPLICIT_USER_INSTRUCTION` — terminal for any amendment authored after `SEARCH_CLOSED_NO_NEW_BASELINE` without an explicit reopen verb in the preceding user instruction (see `core_protocol.md §22`).
 - `CLOSURE_FALLBACK_READ_PENDING` / `CLOSURE_FALLBACK_READ_EXECUTED` — paired labels for amendment-bound closure-time actions. `final_report.md` may not be written while `PENDING` is unresolved (see `core_protocol.md §16`).
 - `METRIC_SCREEN_DEMOTED_BY_CALIBRATION_AUDIT` — screen-vs-promotion-metric correlation fell below threshold. Demotes the screen to floor-only (see `core_protocol.md §17` and `metric_calibration_audit.md`).
@@ -279,7 +279,7 @@ Semantics, briefly:
 - `SINGLE_SEED_MODEL_OF_RECORD_ACCEPTED` — supervised acknowledgment that the model of record rests on a single-seed confirmation read. Required in `final_report.md` if the model of record is not seed-confirmed (see `core_protocol.md §20`).
 - `COUNCIL_TRACE_MISSING` — a major decision recorded without an accompanying `outputs/council_traces/debate_council_<node_id>.md` trace file (see `debate_council.md "Trace Preservation Requirement"`).
 - `COUNCIL_TRACE_SUMMARY_ONLY` — trace file shorter than the per-role minimum or lacking required cross-rebuttal fields.
-- `COUNCIL_ROUND_ROBIN_PATTERN_DETECTED` — trace exists but the skeptic does not engage the builder's specific claim, or the methodologist's decision does not address the skeptic's strongest objection. Detected by a heuristic check; treat a flag as a prompt for human review, not a proof.
+- `COUNCIL_ROUND_ROBIN_PATTERN_DETECTED` — trace exists but the methodologist's section does not name the skeptic / address the skeptic's strongest objection. Hard failure. The detection is a heuristic (it checks whether the methodologist section names the skeptic, not whether the engagement is substantive), so a pass means "no obvious round-robin," not "the debate was substantive"; a false positive is fixed by having the methodologist actually name the skeptic's argument, which is the behavior the gate wants.
 - `COUNCIL_DIVERSITY_SINGLE_VENDOR` — informational. Logged on amendment-grade decisions when all council roles ran on a single vendor. Triggers a required limitation paragraph in `final_report.md`.
 - `LITERATURE_PASS_FETCH_EVIDENCE_MISSING` — papers added to `papers_consulted.md` without per-paper `fetch_url`, `fetch_timestamp`, `fetch_surface`, or `extraction_snippet` (see `core_protocol.md §24`).
 - `INSIGHT_BRIEF_REFLECTION_MISSING` — a brief was written but does not audit the previous brief's predictions against actual results (see `core_protocol.md §25`).

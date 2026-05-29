@@ -616,6 +616,16 @@ Profile: lean and full.
 
 The loop may not record more than three consecutive non-experiment nodes (any node that does not register a row in `results.tsv`) without either launching an experiment or emitting `COUNCIL_ESCALATE_TO_USER` with a one-line explanation of which experiment is being deferred. Metric investigations, audits, amendments, literature passes, support-only nodes, and council-deliberation-only nodes all count. After a supervised resume instruction, the next real action must be an experiment, not another support node.
 
+### Mandatory node headers
+
+So this cap can be enforced rather than hoped for, every node entry in `research_journal.md` must begin with a machine-readable header comment:
+
+```
+<!-- node: id=<NNN> type=<experiment|audit|amendment|literature|support|council> experiment=<true|false> -->
+```
+
+`type=experiment` (or `experiment=true`) marks a node that registers a `results.tsv` row. Every other type is a non-experiment node and counts toward the three-consecutive cap. The same headers let the quarter-budget audit (§23) find `type=audit` nodes. A run that has registered experiments but whose journal carries no node headers is itself a `SPIRAL_NON_EXPERIMENT_NODE_CAP_EXCEEDED` failure, because the cap cannot be checked without them. `validate_non_experiment_node_cap()` enforces both the header presence and the consecutive-count rule.
+
 Examples of the same failure across domains:
 
 - Image classification: building data-augmentation pipelines, evaluation harnesses, and checkpoint-comparison scripts in sequence without launching the next training run.
@@ -709,10 +719,10 @@ At every 25 percent of the experiment budget (50, 100, 150 experiments for a 200
 3. Run the §17 calibration audit.
 4. Ask: is the current gate actually predictive of the protected objective?
 5. If the audit identifies that the gating screen has weakened, recent experiments cluster around a local optimum, or evidence for the current direction is thin or contradictory, run a bounded diagnostic study (a metric-correlation sweep, a no-mechanism replay of a recent candidate, a multi-seed stability check on the model of record, or an isolated metric investigation) before selecting the next experiment. Bound the diagnostic to no more than 3 percent of the remaining budget.
-6. Write an `AUDITNN` node with the calibration verdict, the diagnostic findings if any, and a concrete next-phase decision.
+6. Write an `AUDITNN` node with the calibration verdict, the diagnostic findings if any, and a concrete next-phase decision. The node carries the §15 header with `type=audit` so the validator can find it.
 7. Only then select the next experiment.
 
-If the audit fires and the loop selects a next experiment without writing the `AUDITNN` node or running the bounded diagnostic when triggered, `validate_quarter_budget_audit()` flags the run.
+If the audit fires and the loop selects a next experiment without writing the `type=audit` node or running the bounded diagnostic when triggered, `validate_quarter_budget_audit()` flags the run (pass the experiment budget via `--budget N`; without it the check is advisory because the validator cannot know the cap).
 
 ---
 

@@ -21,7 +21,9 @@
 - **`references/metric_calibration_audit.md`** and **`references/skill_anti_patterns.md`** (two new reference files).
 - **`assets/calibration_audit_template.md`**, **`assets/insight_brief_template.md`**, **`assets/reopen_authorization_template.md`** (three new templates). Expanded `assets/debate_council_template.md` to the trace structure.
 - **`references/decision_labels.md`**: 16 new labels with one-line semantics.
-- **`scripts/validate_autoresearch_artifacts.py`**: ten new checks. Advisory output is now partitioned from hard errors so "could not check" notes (missing journal node headers, no `--budget`, no council-trace dir) do not fail the run. The semantic council-trace checks are explicitly heuristic (surface markers, not proof of debate substance) per their docstrings. Journal-ordering checks read an optional machine-readable node header and degrade to advisory when absent.
+- **`scripts/validate_autoresearch_artifacts.py`**: ten new checks. Advisory output is partitioned from hard errors so genuinely-uncheckable notes (no `--budget` supplied, no council-trace directory on a run that never convened a council) do not fail the run. Two enforcement decisions, made deliberately:
+  - The non-experiment node cap (§15) is a hard check. §15 now mandates a machine-readable `<!-- node: ... -->` header on every journal node entry; a journal that has registered experiments but no headers is a hard failure, because the cap cannot be enforced without them. The same headers drive the quarter-budget `type=audit` detection.
+  - The council `COUNCIL_TRACE_SUMMARY_ONLY` and `COUNCIL_ROUND_ROBIN_PATTERN_DETECTED` checks are hard failures. Their detection is heuristic (word count; whether the methodologist section names the skeptic), and the docstrings and label notes say so plainly: a pass means "no obvious round-robin," not "the debate was substantive." A false positive is fixed by having the methodologist actually name the skeptic's argument, which is the behavior the gate wants.
 
 ### Changed
 

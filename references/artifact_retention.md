@@ -52,11 +52,12 @@ The lineage columns (`parent_experiment_ids`, `branch_type`, `subtree_status`) a
 ## `research_journal.md` Entry Template
 
 ```markdown
+<!-- node: id=<NNN> type=experiment experiment=true -->
 ## Experiment <N>: <Title>
 
 **Parents**: <comma-separated parent experiment_num list, or "none" for root>
 
-**Branch type**: <root | linear | fork | combine | replay>
+**Branch type**: <root | linear | fork | grid_sweep | combine | replay>
 
 **Lineage note**: <one line: why these parents and why this branch type>
 
