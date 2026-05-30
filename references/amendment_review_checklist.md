@@ -18,7 +18,7 @@ Use this checklist:
 
 ---
 
-## The Seven Checks
+## The Eight Checks
 
 ### 1. Monoculture lock-in
 
@@ -50,12 +50,16 @@ For biological projects, does the proposal drift toward wet-lab, clinical, or de
 
 For non-bio projects, does the proposal weaken a safety, security, privacy, compliance, or deployment guardrail to improve a metric? If yes, escalate regardless of confidence.
 
+### 8. Closure-action enforceability
+
+If this amendment specifies any action that must execute at closure (a locked read, a final inference, a confirmation experiment, a registration step), is that action expressed as a concrete, machine-checkable procedure that will be enumerated as the first step of the closure procedure per `core_protocol.md §16`? Has a `CLOSURE_FALLBACK_READ_PENDING` (or equivalent) label been registered so the closure audit trail tracks whether the action executed? An amendment that promises a closure-time action without a registered pending label is incomplete; the action will be silently dropped when the loop closes. Send it back for revision.
+
 ---
 
 ## How To Use This In Supervised Mode
 
 1. Draft the amendment as usual using `assets/session_amendment_template.md`.
-2. Walk through the seven checks below the amendment.
+2. Walk through the eight checks below the amendment.
 3. For each check, write `pass`, `fail`, or `n/a` and a one-line reason.
 4. If any check is `fail`, revise the amendment before pasting it into `autoresearch.md`.
 5. Keep the check log in `research_journal.md` so future amendments can spot patterns.
@@ -65,7 +69,7 @@ For non-bio projects, does the proposal weaken a safety, security, privacy, comp
 ## How To Use This In Council Mode
 
 1. Each non-Monitor agent makes a proposal.
-2. After scoring, the Monitor walks through the seven checks before calling the vote.
+2. After scoring, the Monitor walks through the eight checks before calling the vote.
 3. Any `fail` blocks the vote and forces another debate round or escalation.
 4. The check log is attached to the `debate_council_<id>.md` document.
 
