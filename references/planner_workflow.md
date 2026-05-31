@@ -48,6 +48,7 @@ Even then, the invariants are identical; only who-writes-the-plan changes.
 
 The planner produces exactly the artifact in `SKILL.md` "Output Shapes A" — a self-contained `autoresearch.md` — plus the separate launch message as chat text (never inside the file). Concretely, before the planner finishes it must have decided and written, with no placeholders left except genuine `TO_FILL_BEFORE_LAUNCH` values:
 
+- a **Skill modules** section near the top: the skill location (a mounted path or `clone github.com/yashraj59/autoresearch-bio`) and the exact modules the executor must read. This makes the file self-bootstrapping; without it an executor handed only the `autoresearch.md` cannot follow the `§` references. `validate_autoresearch_prompt()` flags a plan that cites the skill but gives no skill-location pointer;
 - the model or system of record and why it is active;
 - the datasets/benchmarks/splits and their four roles;
 - the Step 0 baseline plan (and exact baseline values where known; never invented);
@@ -117,8 +118,9 @@ Notes:
 Once the planner emits the `autoresearch.md`:
 
 1. Save it into the run repo (the executor's working repo, never a read-only source).
-2. Paste the planner's separate launch message into the coding agent.
-3. The executor reads the `autoresearch.md` and the referenced skill modules, runs the leakage pre-flight and Step 0 baselines first, and only then begins Tier 1.
+2. Save `assets/executor_instructions.md` into the run repo as the file your harness auto-reads (`AGENTS.md` for Codex, `CLAUDE.md` for Claude Code, `.cursor/rules/` for Cursor). It carries the standing executor discipline so your launch message can stay short.
+3. Paste the planner's separate launch message into the coding agent. With the executor instructions in place, the message can be as short as "read `AGENTS.md` and `autoresearch.md`, run the pre-flight and Step 0, begin."
+4. The executor clones the skill if it is not mounted (the `autoresearch.md` Skill modules section gives the location), reads the referenced modules, runs the leakage pre-flight and Step 0 baselines first, and only then begins Tier 1.
 
 The executor follows the plan as written. It does not redesign the families or relax the tiers; if it believes the plan is wrong, that is a stop-and-amend event (`core_protocol.md §14`), and in autonomous mode the amendment-origin rule applies — a fired stop cannot be overridden by the same process that hit it. The executor can flag a broken plan but cannot quietly rewrite the design the planner fixed. If `family_set: fixed`, the executor may not add a family at all without an explicit user re-grant.
 

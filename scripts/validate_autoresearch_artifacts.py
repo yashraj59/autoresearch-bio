@@ -798,6 +798,23 @@ def validate_autoresearch_prompt(run_dir: Path) -> list[str]:
             "Label: AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE (§5)."
         )
 
+    # If the plan references the skill (a § section or core_protocol) it must tell
+    # the executor where the skill is, or the references are unresolvable.
+    cites_skill = ("core_protocol" in low) or ("§" in text) or ("references/" in low)
+    has_location = (
+        "autoresearch-bio" in low
+        or "skill location" in low
+        or "skill modules" in low
+        or "git clone" in low
+    )
+    if cites_skill and not has_location:
+        errors.append(
+            "autoresearch.md references skill modules (a § section or "
+            "core_protocol) but carries no skill-location pointer (a mounted path "
+            "or a clone URL). Add a Skill modules section. Label: "
+            "AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE (§5)."
+        )
+
     return errors
 
 

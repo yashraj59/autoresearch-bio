@@ -118,11 +118,12 @@ Do not invoke this skill for:
 
 Must include:
 
+- a **Skill modules** section near the top: the skill location (a mounted path or `clone github.com/yashraj59/autoresearch-bio`) and the exact list of modules the executor must read. This makes the file self-bootstrapping — an agent handed the `autoresearch.md` alone can fetch the skill and know which modules to read. `validate_autoresearch_prompt()` flags a plan that references the skill (`§` or `core_protocol`) but carries no skill-location pointer;
 - model or system of record;
 - datasets, benchmarks, validation suites, or split roles;
 - Step 0 baseline plan;
 - primary, secondary, protected, and catastrophic-fail metrics;
-- architectural, mechanism, or implementation families;
+- architectural, mechanism, or implementation families, each with an `origin` tag, and the `family_set` mode (`fixed` or `open`);
 - tiered gates;
 - domain diagnostics;
 - lineage rules (parent_experiment_ids, branch_type, subtree pruning);
@@ -130,7 +131,7 @@ Must include:
 - artifact retention rules;
 - stop conditions.
 
-After producing the `autoresearch.md` file content, emit a separate launch message in chat. The launch message tells the user what to paste into the coding agent. **Do not include the launch message inside the `autoresearch.md` file.** Keep it as a separate code block in the chat response.
+After producing the `autoresearch.md` file content, emit a separate launch message in chat. A good launch message points the executor at `assets/executor_instructions.md` (saved into the run repo as `AGENTS.md` / `CLAUDE.md`) so the per-run message stays short and the standing executor discipline is carried by that file. The launch message tells the user what to paste into the coding agent. **Do not include the launch message inside the `autoresearch.md` file.** Keep it as a separate code block in the chat response.
 
 Use `assets/autoresearch_template.md` as the base. For biology, read `references/core_protocol.md`, `references/biology_addendum.md`, `references/statistical_promotion.md`, and `references/lineage.md`. For non-bio work, read `references/core_protocol.md`, `references/domain_adaptation.md`, `references/statistical_promotion.md`, and `references/lineage.md`.
 

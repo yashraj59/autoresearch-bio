@@ -76,9 +76,12 @@ Read the families and tiers especially — that is where a weak plan hides, and 
 
 ```bash
 cp autoresearch.md /path/to/your-run-repo/
+# the standing executor discipline, saved as the file your harness auto-reads:
+cp autoresearch-bio/assets/executor_instructions.md /path/to/your-run-repo/AGENTS.md   # Codex
+#   ... or CLAUDE.md for Claude Code, .cursor/rules/executor.md for Cursor
 ```
 
-Paste the planner's **launch message** into your coding agent (Codex, Claude Code, Cursor, Aider). The agent reads the `autoresearch.md` and the skill modules, runs the leakage pre-flight and Step 0 baselines first, then begins Tier 1. It follows the plan as written; if it thinks the plan is wrong, that is a stop-and-amend event, not a quiet rewrite.
+Paste the planner's **launch message** into your coding agent (Codex, Claude Code, Cursor, Aider). With `executor_instructions.md` in place as `AGENTS.md`/`CLAUDE.md`, the message can be short — the agent reads the executor instructions and the `autoresearch.md` on entry, clones the skill if it is not mounted (the `autoresearch.md` Skill modules section gives the location), runs the leakage pre-flight and Step 0 baselines first, then begins Tier 1. It follows the plan as written; if it thinks the plan is wrong, that is a stop-and-amend event, not a quiet rewrite.
 
 ---
 
