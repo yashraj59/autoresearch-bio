@@ -9,6 +9,7 @@
 - **`references/decision_labels.md` two new labels.** `AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE` (the plan defers design to runtime: deferral phrase, no family definitions, or no `family_set` declared) and `FAMILY_SET_FIXED_VIOLATED` (a `results.tsv` family is absent from a `fixed`-set plan with no reopen authorization).
 - **`scripts/validate_autoresearch_artifacts.py` two new checks.** `validate_autoresearch_prompt()` runs on `<run>/autoresearch.md` when present (skips when absent) and checks design *completeness, not authorship* — a fully user-defined plan passes. `validate_family_set_fixed()` enforces that a `fixed` family set is not exceeded without reopen authorization.
 - **`evals/process_checklist.md`** gains a Planner Deliverable Completeness block.
+- **New `QUICKSTART.md`** at the repo root. The five-minute user-facing path: install or clone, plan with a chat model (with the paste-ready planner prompt and the three design-choice options), review, hand to the executor, optional validate, plus a single-agent shortcut and a common-mistakes list. `README.md` "How to use" now leads with a pointer to it.
 
 ### Changed
 

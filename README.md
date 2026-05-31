@@ -22,6 +22,10 @@ This repo is the protocol I use to make autoresearch less random, less reward-ha
 
 ## How to use
 
+New here? **[`QUICKSTART.md`](QUICKSTART.md)** is the five-minute path: how to get an `autoresearch.md` for your project (a chat model plans it, you review, a coding agent runs it) and the common mistakes to avoid.
+
+The longer version:
+
 1. Read `SKILL.md` to understand the protocol.
 2. Pick the closest example, or use the template skeleton in `assets/autoresearch_template.md`.
 3. Fill in your model of record, datasets, metrics, families, stop conditions, and lineage rules.
