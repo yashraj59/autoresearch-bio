@@ -11,6 +11,8 @@ The skill's primary artifact is a paste-ready `autoresearch.md` **prompt for a c
 
 The skill can also produce amendments, decision memos, metric investigation prompts, or reusable skill updates.
 
+**Roles.** Producing an `autoresearch.md` and running it are two jobs. A strong reasoning chat model is usually the better **planner** (reads context, designs the families, tiers, metrics, baselines, stop conditions) and a coding agent is the better **executor**. When this skill is invoked in a chat model to draft a prompt, it is the planner; the file it emits is run by the executor. The user can supply the whole design, ask the planner to design it from a bare problem, or do a hybrid. `references/planner_workflow.md` covers the split and how to prompt the planner; the family-set switches live in `core_protocol.md §5`. The discipline invariants do not change with the role.
+
 The invariant is the same in every domain: protect the model or system of record, register baselines before search, use tiered gates, track lineage of experiments, document every result, avoid metric loopholes, and stop cleanly when stop conditions fire.
 
 ---
@@ -132,6 +134,8 @@ After producing the `autoresearch.md` file content, emit a separate launch messa
 
 Use `assets/autoresearch_template.md` as the base. For biology, read `references/core_protocol.md`, `references/biology_addendum.md`, `references/statistical_promotion.md`, and `references/lineage.md`. For non-bio work, read `references/core_protocol.md`, `references/domain_adaptation.md`, `references/statistical_promotion.md`, and `references/lineage.md`.
 
+**Planner/executor split (recommended).** Authoring the `autoresearch.md` is itself best done by a strong reasoning chat model acting as the **planner**, which designs the families, tiers, metrics, baselines, lineage rules, and stop conditions, then emits the file for a separate coding agent to **execute**. The planner must produce a complete design rather than defer it to the executor (a plan that punts the families to runtime fails `validate_autoresearch_prompt()`); but the *design itself is the user's* — the user can supply the families/tiers/metrics, ask the planner to propose them from a bare problem, or do a hybrid, and each family is tagged `origin: user_fixed | planner_proposed` (`core_protocol.md §5`). See `references/planner_workflow.md` for the role split, the three input modes, and a planner prompt skeleton. The invariants are identical regardless of who writes the plan.
+
 ### B. Session Amendment
 
 Must include:
@@ -241,6 +245,7 @@ Read only what is needed for the artifact:
 | DAG / lineage rules | `references/lineage.md` |
 | Screen-vs-promotion-metric calibration | `references/metric_calibration_audit.md` |
 | Failure-mode digest (read before a long autonomous run) | `references/skill_anti_patterns.md` |
+| Using a chat model to author the prompt for an agent to run | `references/planner_workflow.md` |
 | Paste-ready templates | `assets/*.md` |
 | Skill quality checks | `evals/process_checklist.md`, `evals/trigger_prompts.csv` |
 

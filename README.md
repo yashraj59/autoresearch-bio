@@ -28,6 +28,14 @@ This repo is the protocol I use to make autoresearch less random, less reward-ha
 4. Point your coding agent (Claude Code, Codex, or similar) at the prompt.
 5. Watch the agent run experiments while protecting your baseline.
 
+### Who writes the plan vs who runs it
+
+Writing the `autoresearch.md` and running it are two different jobs, usually best done by two different models: a strong reasoning chat model is the better **planner** (it reads your repo and prior runs and designs the families, tiers, metrics, baselines, and stop conditions), and a coding agent is the better **executor** (it runs the loop against your filesystem). You get a complete, reviewable design before any compute is spent, and the executor is held to a plan it cannot quietly weaken.
+
+The design is yours. You can hand the planner the exact families and metrics you want tested, hand it only a problem and let it design everything, or do a hybrid — all three are first-class. The planner must produce a *complete* design (it can't punt the families to the executor), but *what* the families and metrics are is your call; the skill enforces the discipline (protected baseline, Step 0, four-role split, leakage pre-flight, tiered gates, lineage, honest labels, stop conditions), not the science. If you fix the family set, the loop won't add families on its own.
+
+See `references/planner_workflow.md` for the role split, the three input modes, the `family_set` switches, and a paste-ready planner prompt.
+
 The protocol has three load-bearing elements:
 
 - A protected model or system of record that never silently drifts.

@@ -743,6 +743,100 @@ def validate_insight_brief_reflection(run_dir: Path) -> list[str]:
     return errors
 
 
+# Phrases that signal the planner punted the design to the executor instead of
+# fixing it (case-insensitive substring match). Anti-deferral, §5 / planner_workflow.
+DEFERRAL_PHRASES = (
+    "agent will decide the famil",
+    "executor will decide the famil",
+    "executor will choose the famil",
+    "agent will choose the famil",
+    "agent decides the famil",
+    "agent will determine the famil",
+    "executor will choose the tier",
+    "agent will choose the tier",
+    "the agent will figure out the famil",
+    "families to be decided at runtime",
+    "tiers to be decided at runtime",
+    "families tbd",
+)
+
+FAMILY_HEADING_RE = re.compile(r"^#+\s*Family\b|\bFamily\s+\d+\s*:", re.IGNORECASE | re.MULTILINE)
+FAMILY_SET_RE = re.compile(r"family_set\s*[:=]\s*(fixed|open)", re.IGNORECASE)
+
+
+def validate_autoresearch_prompt(run_dir: Path) -> list[str]:
+    """Design-completeness check on a generated autoresearch.md, if the run dir
+    vendors one. Checks completeness, NOT authorship: a fully user-defined plan
+    passes. Skips silently when no autoresearch.md is present (not every run
+    vendors its prompt)."""
+    prompt = run_dir / "autoresearch.md"
+    if not prompt.exists():
+        return []
+    text = prompt.read_text(encoding="utf-8", errors="replace")
+    low = text.lower()
+    errors: list[str] = []
+
+    hit = next((p for p in DEFERRAL_PHRASES if p in low), None)
+    if hit:
+        errors.append(
+            f"autoresearch.md contains a deferral phrase ('{hit}'): the design "
+            f"is punted to runtime instead of fixed. Label: "
+            f"AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE (§5)."
+        )
+
+    if not FAMILY_HEADING_RE.search(text):
+        errors.append(
+            "autoresearch.md has no detectable family definitions (no 'Family' "
+            "headings). The plan must fix the families before launch. Label: "
+            "AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE (§5)."
+        )
+
+    if not FAMILY_SET_RE.search(text):
+        errors.append(
+            "autoresearch.md does not declare family_set (fixed | open). The plan "
+            "must state whether the family set is closed or open to additions. "
+            "Label: AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE (§5)."
+        )
+
+    return errors
+
+
+def validate_family_set_fixed(run_dir: Path, rows: list[dict]) -> list[str]:
+    """If autoresearch.md declares family_set: fixed, every family that appears
+    in results.tsv must be named in the plan. A family that is not, and is not
+    covered by a REOPEN_AUTHORIZATION_RECORD.md, is an unauthorized addition."""
+    prompt = run_dir / "autoresearch.md"
+    if not prompt.exists():
+        return []
+    text = prompt.read_text(encoding="utf-8", errors="replace")
+    m = FAMILY_SET_RE.search(text)
+    if not m or m.group(1).lower() != "fixed":
+        return []
+    low_plan = text.lower()
+    has_reopen = (run_dir / "REOPEN_AUTHORIZATION_RECORD.md").exists()
+    errors: list[str] = []
+    seen: set[str] = set()
+    for r in rows:
+        fam = (r.get("family", "") or "").strip()
+        if not fam or fam in seen:
+            continue
+        seen.add(fam)
+        if fam.lower() in {"baseline", "step0", "step_0"}:
+            continue
+        # A fixed family should be named somewhere in the plan. Use a loose
+        # containment check on the family label (and its leading "Family N" id).
+        fam_key = fam.lower()
+        short = re.match(r"(family\s*\d+)", fam_key)
+        named = fam_key in low_plan or (short and short.group(1) in low_plan)
+        if not named and not has_reopen:
+            errors.append(
+                f"family_set is 'fixed' but results.tsv family '{fam}' is not "
+                f"named in autoresearch.md and no REOPEN_AUTHORIZATION_RECORD.md "
+                f"grants it. Label: FAMILY_SET_FIXED_VIOLATED (§5)."
+            )
+    return errors
+
+
 def main(argv: list[str]) -> int:
     # Optional --budget N for the quarter-budget audit check.
     budget: int | None = None
@@ -836,6 +930,8 @@ def main(argv: list[str]) -> int:
     errors.extend(validate_single_seed_mor_disclosure(run_dir))
     errors.extend(validate_literature_fetch_evidence(run_dir))
     errors.extend(validate_insight_brief_reflection(run_dir))
+    errors.extend(validate_autoresearch_prompt(run_dir))
+    errors.extend(validate_family_set_fixed(run_dir, rows))
 
     # Partition advisories (informational, "could not check") from hard errors.
     # Advisories print but do not affect the exit code, so a run that simply

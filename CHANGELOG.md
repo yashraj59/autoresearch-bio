@@ -1,5 +1,28 @@
 # Changelog
 
+## Unreleased — Planner/executor workflow + user-owned design control
+
+### Added
+
+- **New reference `references/planner_workflow.md`.** Documents the two-role workflow: a strong reasoning chat model acts as the **planner** that designs the families, tiers, metrics, baselines, lineage rules, and stop conditions and emits the `autoresearch.md`; a separate coding agent acts as the **executor**. Covers why the split helps, when to use it vs a single agent, the three first-class input modes (user designs it / planner designs it from a bare problem / hybrid), the planner's deliverable, a single paste-ready planner prompt skeleton, the hand-off to the executor, and an optional multi-vendor planning pass. Model names are given as examples of the needed capability, not as requirements; the skill stays vendor-agnostic.
+- **`references/core_protocol.md §5` — design-control model.** Three first-class input modes (user-supplied / planner-proposed / hybrid). A `family_set: fixed | open` switch and a per-family `origin: user_fixed | planner_proposed` tag. A two-switch table (autonomy × family_set) defining who may add a family, expressed through the existing amendment + amendment-review path (no run-specific numbers in the skill). The suggest-vs-launch rule: in supervised mode the loop may recommend a new family at closure but may not launch one. A `user_fixed` family may be retired or replaced only by the user.
+- **`references/decision_labels.md` two new labels.** `AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE` (the plan defers design to runtime: deferral phrase, no family definitions, or no `family_set` declared) and `FAMILY_SET_FIXED_VIOLATED` (a `results.tsv` family is absent from a `fixed`-set plan with no reopen authorization).
+- **`scripts/validate_autoresearch_artifacts.py` two new checks.** `validate_autoresearch_prompt()` runs on `<run>/autoresearch.md` when present (skips when absent) and checks design *completeness, not authorship* — a fully user-defined plan passes. `validate_family_set_fixed()` enforces that a `fixed` family set is not exceeded without reopen authorization.
+- **`evals/process_checklist.md`** gains a Planner Deliverable Completeness block.
+
+### Changed
+
+- **`SKILL.md`** Golden Path gains a short Roles note; Output Shape A states the planner/executor split and the completeness-not-authorship rule; the Reference Loading Map gains a `planner_workflow.md` row. All kept as short pointers to `planner_workflow.md` rather than full restatements.
+- **`README.md`** gains a short "Who writes the plan vs who runs it" subsection that points at `planner_workflow.md` for the full detail and one planner prompt (the prompt skeleton lives only in `planner_workflow.md` to avoid drift).
+
+### Motivating evidence
+
+Frontier reasoning chat models are currently stronger at the design work an `autoresearch.md` requires, while the agent harnesses are stronger at executing a fixed plan. Separating the roles makes the design reviewable before compute is spent and holds the executor to a plan it did not get to weaken, which is the same property the protected-baseline and stop-trigger-origin rules protect elsewhere. The design-control model makes explicit what the skill always implied: the skill governs the method (protected baseline, Step 0, splits, gates, lineage, honest labels, stop conditions, safety), and the user owns the science (the thesis, the families, the metric). The anti-deferral check is scoped to the executor, so "you hand over a problem and the planner proposes everything" passes cleanly while "the planner punts the families to runtime" does not.
+
+### What this does not change
+
+This is a workflow plus a design-control model, not run policy. How many families a run allows, and any stricter bar for an autonomously-added family, stay in the specific `autoresearch.md` a planner writes, never in the skill.
+
 ## Unreleased — Autonomy gaps, council trace preservation, calibration audit cadence, literature fetch evidence, insight-brief reflection
 
 ### Added

@@ -283,3 +283,13 @@ Semantics, briefly:
 - `COUNCIL_DIVERSITY_SINGLE_VENDOR` — informational. Logged on amendment-grade decisions when all council roles ran on a single vendor. Triggers a required limitation paragraph in `final_report.md`.
 - `LITERATURE_PASS_FETCH_EVIDENCE_MISSING` — papers added to `papers_consulted.md` without per-paper `fetch_url`, `fetch_timestamp`, `fetch_surface`, or `extraction_snippet` (see `core_protocol.md §24`).
 - `INSIGHT_BRIEF_REFLECTION_MISSING` — a brief was written but does not audit the previous brief's predictions against actual results (see `core_protocol.md §25`).
+
+## Planner / Design-Control Labels
+
+```text
+AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE
+FAMILY_SET_FIXED_VIOLATED
+```
+
+- `AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE` — a generated `autoresearch.md` defers design to runtime instead of fixing it: it contains a deferral phrase ("the agent will decide the families", "executor will choose the tiers"), or has no detectable family definitions, or does not declare `family_set`. The check is on design completeness, not authorship — a fully user-defined plan passes (see `core_protocol.md §5` and `references/planner_workflow.md`). Detected by `validate_autoresearch_prompt()`.
+- `FAMILY_SET_FIXED_VIOLATED` — the plan declares `family_set: fixed`, but `results.tsv` contains a family that is not named anywhere in the `autoresearch.md` and no `REOPEN_AUTHORIZATION_RECORD.md` grants the addition. The loop ran a family the user did not authorize (see `core_protocol.md §5`).
