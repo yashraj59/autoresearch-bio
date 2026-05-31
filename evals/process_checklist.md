@@ -152,3 +152,14 @@ Every row of `external_public_baselines.tsv` (or any equivalent comparator TSV) 
 ### Reference-Number Single Source Of Truth
 
 Every plot/PDF/blog generator script in the run directory or sibling project must read literature comparator numbers from `external_public_baselines.tsv` (or the explicitly registered source) rather than from a module-level constant. Hardcoded numeric constants in report code that match a TSV row value → `REFERENCE_NUMBER_HARDCODED_IN_REPORT`.
+
+### Planner Deliverable Completeness
+
+When the run directory vendors a generated `autoresearch.md`, the plan must fix the design rather than defer it to the executor:
+
+- No deferral phrase ("the agent will decide the families", "executor will choose the tiers").
+- At least one detectable family definition.
+- `family_set` declared (`fixed` or `open`).
+- Each family carries an `origin` tag (`user_fixed` or `planner_proposed`).
+
+The check is on completeness, not authorship — a fully user-supplied design passes. Failures → `AUTORESEARCH_PROMPT_DESIGN_INCOMPLETE`. If `family_set: fixed`, any `results.tsv` family not named in the plan and not covered by a `REOPEN_AUTHORIZATION_RECORD.md` → `FAMILY_SET_FIXED_VIOLATED`. See `references/planner_workflow.md` and `core_protocol.md §5`.

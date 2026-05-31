@@ -234,6 +234,34 @@ Useful family examples:
 - modular mixture-of-experts routing;
 - physics-, biology-, policy-, or domain-constrained residual updates.
 
+### Who designs the families: user, planner, or hybrid
+
+The skill governs the method, not the science. The families, the thesis, and the metric being optimized are the user's call; the discipline around them is the skill's. There are three ways the family set gets written, all first-class:
+
+- **User-supplied.** The user hands over the families (and possibly the tiers and metrics) they want tested. The planner formalizes them into the disciplined structure (a Step 0 comparison, a gate, a stop/pivot rule each) and does not invent its own.
+- **Planner-proposed.** The user hands over only the problem and context and proposes nothing. The planner designs the full family set. This is fully supported; "I did no proposal" is not deferral as long as the planner produces a complete design (see §15 and the prompt-completeness check). The quality of proposed families scales with the context the planner is given; a bare problem statement yields generic families.
+- **Hybrid.** The user fixes some families and lets the planner propose the rest.
+
+Each family carries an `origin` tag, `user_fixed` or `planner_proposed`. A `user_fixed` family may be retired or replaced only by the user, never by the loop.
+
+### Family-set mode and who may add a family
+
+Adding a family that is not in the current set is an amendment (the rule above). Who is allowed to author that amendment depends on two independent switches declared in the `autoresearch.md`:
+
+- `family_set: fixed` — the set is closed. The loop runs exactly these families and may not add another without an explicit user re-grant. In supervised mode the loop may still *recommend* a new family in the closure next-phase decision (§27), but it may not *launch* experiments in an unauthorized family.
+- `family_set: open` — the planner or, in autonomous mode, the council may propose adding a family through the normal amendment path, subject to `references/amendment_review_checklist.md`.
+
+Combined with the autonomy switch:
+
+| autonomous | family_set | who may add a family |
+| --- | --- | --- |
+| off | fixed | only the user, by editing the plan; loop runs the set and recommends-only at closure |
+| off | open | a human amendment; the loop never self-adds |
+| on | fixed | nobody; the council runs hands-off but may not author a new-family amendment |
+| on | open | the council, via an amendment that passes the amendment review checklist |
+
+The `on + fixed` row is the "autonomous execution of exactly my thesis" mode: the loop runs overnight without intervention but never wanders off the family set the user fixed. How many families a run allows, and any stricter bar for an autonomously-added family, are policy the planner writes into the specific `autoresearch.md`; the skill supplies the mechanism (amendment plus review checklist), not the numbers.
+
 ---
 
 ## 6. Tiered Evaluation Gates

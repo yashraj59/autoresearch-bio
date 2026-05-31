@@ -1,5 +1,23 @@
 # <Project> Autoresearch-Bio: <Search Goal>
 
+## Skill Modules (read before Step 0)
+
+This plan is written against the autoresearch-bio skill.
+
+Skill location: `<mounted path, e.g. ../autoresearch-bio/  —  or: clone github.com/yashraj59/autoresearch-bio>`
+
+Read these before launching:
+
+- `references/core_protocol.md` (esp. §3 Step 0, §3.5 four-role split + leakage pre-flight, §5 families + `family_set`, §13 literature, §14 stop, §15 node headers, §17 calibration, §23 quarter-budget reassessment)
+- `references/biology_addendum.md` (if biology) OR `references/domain_adaptation.md` (if not)
+- `references/statistical_promotion.md`
+- `references/lineage.md`
+- `references/decision_labels.md`
+- `references/artifact_retention.md`
+- `references/debate_council.md` + `references/amendment_review_checklist.md` (if autonomous)
+
+Standing executor discipline lives in `assets/executor_instructions.md`; save it into this run repo as `AGENTS.md` / `CLAUDE.md` so your agent reads it on entry.
+
 ## Model Or System Of Record
 
 - Model/system/checkpoint/service/config: `<TO_FILL_BEFORE_LAUNCH>`
