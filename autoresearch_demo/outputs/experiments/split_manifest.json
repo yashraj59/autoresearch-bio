@@ -1,0 +1,10 @@
+{
+  "dataset": "synthetic_rosmap_shaped_demo",
+  "seed": 42,
+  "split_roles": {
+    "train": "fit model parameters",
+    "val": "Tier 1 and Tier 2 selection metric",
+    "test": "held-out reporting only; not used for search decisions"
+  },
+  "leakage_policy": "No candidate is selected by test-set performance."
+}

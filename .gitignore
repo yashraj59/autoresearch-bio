@@ -1,1 +1,32 @@
-scripts/__pycache__/
+# Python caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments and local tooling
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Notebook and editor spillover
+.ipynb_checkpoints/
+.DS_Store
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Large or transient model artifacts
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.safetensors
+
+# Temporary outputs
+tmp/
+temp/

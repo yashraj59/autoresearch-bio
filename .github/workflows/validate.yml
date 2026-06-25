@@ -1,0 +1,34 @@
+name: Validate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate skill repository
+        run: python scripts/validate_skill_repo.py
+
+      - name: Compile Python files
+        run: |
+          python -m py_compile \
+            scripts/validate_skill_repo.py \
+            scripts/validate_autoresearch_artifacts.py \
+            autoresearch_demo/run_autoresearch.py \
+            autoresearch_demo/mofnet.py \
+            autoresearch_demo/make_plots.py
+
+      - name: Validate committed demo artifacts
+        run: python scripts/validate_autoresearch_artifacts.py --budget 25 autoresearch_demo/outputs/experiments

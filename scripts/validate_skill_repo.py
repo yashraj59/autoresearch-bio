@@ -17,6 +17,9 @@ ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = [
     "SKILL.md",
     "README.md",
+    "QUICKSTART.md",
+    "CHANGELOG.md",
+    "MANIFEST.md",
     "LICENSE",
     "references/core_protocol.md",
     "references/domain_adaptation.md",
@@ -28,6 +31,9 @@ REQUIRED_FILES = [
     "references/statistical_promotion.md",
     "references/lineage.md",
     "references/amendment_review_checklist.md",
+    "references/metric_calibration_audit.md",
+    "references/planner_workflow.md",
+    "references/skill_anti_patterns.md",
     "assets/autoresearch_template.md",
     "assets/session_amendment_template.md",
     "assets/decision_memo_template.md",
@@ -37,9 +43,16 @@ REQUIRED_FILES = [
     "assets/debate_council_template.md",
     "assets/baseline_registry_template.md",
     "assets/external_resources_template.md",
+    "assets/calibration_audit_template.md",
+    "assets/executor_instructions.md",
+    "assets/insight_brief_template.md",
+    "assets/papers_consulted_starter.md",
+    "assets/reopen_authorization_template.md",
     "assets/results_tsv_schema.tsv",
+    "assets/split_manifest.schema.json",
     "evals/trigger_prompts.csv",
     "evals/process_checklist.md",
+    "evals/README.md",
 ]
 
 

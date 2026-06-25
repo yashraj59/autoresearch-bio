@@ -10,8 +10,9 @@ from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 import numpy as np
 import pandas as pd
 
-EXP_DIR = Path("/home/claude/mofnet_demo/outputs/experiments")
-PLOT_DIR = Path("/home/claude/mofnet_demo/outputs/plots")
+DEMO_DIR = Path(__file__).resolve().parent
+EXP_DIR = DEMO_DIR / "outputs" / "experiments"
+PLOT_DIR = DEMO_DIR / "outputs" / "plots"
 PLOT_DIR.mkdir(parents=True, exist_ok=True)
 
 df = pd.read_csv(EXP_DIR / "results.tsv", sep="\t")
@@ -23,8 +24,8 @@ baseline_std = registry["baseline_std"]
 # Plot 1: Improvement chart (Tier 1 single-seed vs Tier 2 multi-seed)
 # ============================================================
 fig, ax = plt.subplots(figsize=(11, 6))
-baseline_auc = baseline_mean["test_auc"]
-baseline_auc_std = baseline_std["test_auc"]
+baseline_auc = baseline_mean["val_auc"]
+baseline_auc_std = baseline_std["val_auc"]
 
 ax.axhspan(
     baseline_auc - baseline_auc_std, baseline_auc + baseline_auc_std,
@@ -60,8 +61,8 @@ for _, row in df.iterrows():
     ax.text(xpos, label_y, row["family"], ha="center", fontsize=9, rotation=15)
 
 ax.set_xlabel("Experiment number", fontsize=12)
-ax.set_ylabel("Test AUC", fontsize=12)
-ax.set_title("MoFNet Autoresearch: Test AUC by Experiment (Tier 1 = circle, Tier 2 = square with error bars)",
+ax.set_ylabel("Validation AUC", fontsize=12)
+ax.set_title("MoFNet Autoresearch: Validation AUC by Experiment (Tier 1 = circle, Tier 2 = square with error bars)",
              fontsize=13)
 ax.set_xticks(df["experiment_num"].tolist())
 
@@ -78,13 +79,13 @@ ax.grid(alpha=0.3)
 # Annotate the headline result
 ax.annotate(
     "Single-seed Tier 1 'keep' on gating\nlooked like improvement",
-    xy=(4, 0.8965), xytext=(2.3, 0.911),
+    xy=(4, df.loc[df["experiment_num"] == 4, "primary_metric"].iloc[0]), xytext=(2.3, baseline_auc + 0.017),
     fontsize=9, color="#2ca02c",
     arrowprops=dict(arrowstyle="->", color="#2ca02c", lw=1.5),
 )
 ax.annotate(
     "Tier 2 multi-seed revealed\nimprovement was within noise.\nNo promotion.",
-    xy=(5, 0.8937), xytext=(5.3, 0.879),
+    xy=(5, df.loc[df["experiment_num"] == 5, "primary_metric"].iloc[0]), xytext=(5.3, baseline_auc - 0.014),
     fontsize=9, color="#ff7f0e",
     arrowprops=dict(arrowstyle="->", color="#ff7f0e", lw=1.5),
 )
@@ -215,7 +216,7 @@ bars = ax1.bar(x_positions, aucs, yerr=stds, color=bar_colors, edgecolor="black"
                capsize=6, alpha=0.85)
 ax1.set_xticks(x_positions)
 ax1.set_xticklabels(labels, fontsize=10)
-ax1.set_ylabel("Test AUC", fontsize=12)
+ax1.set_ylabel("Validation AUC", fontsize=12)
 ax1.set_title("A. Tier-by-Tier AUC Comparison", fontsize=12)
 ax1.set_ylim(0.86, 0.92)
 ax1.grid(axis="y", alpha=0.3)

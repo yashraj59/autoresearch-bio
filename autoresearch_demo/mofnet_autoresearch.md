@@ -1,5 +1,12 @@
 # MoFNet Autoresearch-Bio: Improve Alzheimer's Classification Without Breaking Interpretability
 
+## Skill Modules
+
+- Skill location: clone `https://github.com/yashraj59/autoresearch-bio` or mount this repository at its root.
+- Required modules: `SKILL.md`, `references/core_protocol.md`, `references/biology_addendum.md`, `references/statistical_promotion.md`, `references/lineage.md`, `references/artifact_retention.md`, `references/decision_labels.md`.
+- `family_set: fixed`
+- Autonomy: `supervised`
+
 ## Model Or System Of Record
 
 - Model: MoFNet v1.1.0 (single-file `mofnet.py`)

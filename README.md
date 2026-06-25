@@ -4,7 +4,7 @@ A discipline protocol for running autonomous ML research with coding agents — 
 
 It is **bio-first** (with extra rules for biology and single-cell modeling) but **domain-general** — the same control system applies to non-bio ML, software engineering, agent benchmarking, and infrastructure experiments.
 
-This came from running 80+ autonomous experiments on a bio-specific ML model where I learned the hard way that AI coding agents need strict research discipline. Without it, the agents drift toward mechanisms that improve broad metrics while breaking protected behavior, saturating contribution caps, collapsing diversity, or overfitting to one dataset.
+This came from repeated autonomous experiments on bio-specific ML models where I learned the hard way that AI coding agents need strict research discipline. Without it, the agents drift toward mechanisms that improve broad metrics while breaking protected behavior, saturating contribution caps, collapsing diversity, or overfitting to one dataset.
 
 This repo is the protocol I use to make autoresearch less random, less reward-hacking, and more useful as actual science.
 
@@ -19,6 +19,7 @@ This repo is the protocol I use to make autoresearch less random, less reward-ha
 - `assets/` has paste-ready templates for the autoresearch.md prompt, amendments, decision memos, journal entries, baseline registries, and results.tsv schema.
 - `evals/` has trigger prompts and a process checklist so you can spot-check whether the skill is doing its job.
 - `scripts/` has two small validation scripts. One checks the skill repo structure. The other checks a generated autoresearch run directory.
+- `autoresearch_demo/` has a synthetic MoFNet-shaped reference run. It is useful for humans and CI, but excluded from the packaged skill archive.
 
 ## How to use
 
@@ -61,6 +62,7 @@ git archive --format=zip --prefix=autoresearch-bio/ HEAD -o ../autoresearch-bio-
 ```
 
 The ZIP should contain a top-level `autoresearch-bio/` folder, with `autoresearch-bio/SKILL.md` inside it. Do not zip the files directly at the archive root.
+The repository's `.gitattributes` keeps GitHub workflow files and the synthetic demo out of the skill archive.
 
 ### ChatGPT
 

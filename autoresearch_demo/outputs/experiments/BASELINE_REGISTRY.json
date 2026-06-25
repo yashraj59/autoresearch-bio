@@ -4,6 +4,11 @@
     "test_auc": "higher",
     "test_f1": "higher",
     "test_acc": "higher",
+    "val_auc": "higher",
+    "val_f1": "higher",
+    "val_acc": "higher",
+    "val_ece": "lower",
+    "val_prec_at_spec90": "higher",
     "test_ece": "lower",
     "test_prec_at_spec90": "higher",
     "ig_top_k_overlap_vs_baseline": "higher"
@@ -11,19 +16,25 @@
   "baseline_mean": {
     "val_auc": 0.8551307847082494,
     "val_f1": 0.7516217358546043,
+    "val_acc": 0.7944444444444446,
+    "val_ece": 0.09651348292827606,
+    "val_prec_at_spec90": 1.0,
     "test_auc": 0.8936588103254771,
     "test_f1": 0.8125327394075063,
     "test_acc": 0.7999999999999999,
-    "test_ece": 0.12430544354849389,
+    "test_ece": 0.1243054495503505,
     "test_prec_at_spec90": 1.0
   },
   "baseline_std": {
     "val_auc": 0.007087569994790482,
     "val_f1": 0.01723336131143541,
+    "val_acc": 0.014163943093313291,
+    "val_ece": 0.016802475093030574,
+    "val_prec_at_spec90": 0.0,
     "test_auc": 0.003099147311219768,
     "test_f1": 0.02583562963161815,
     "test_acc": 0.020412414523193124,
-    "test_ece": 0.007131839306359494,
+    "test_ece": 0.007131835335959951,
     "test_prec_at_spec90": 0.0
   },
   "baseline_ig_top_10": [
